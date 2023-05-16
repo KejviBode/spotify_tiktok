@@ -1,9 +1,9 @@
-DROP TABLE IF EXISTS artist;
 DROP TABLE IF EXISTS artist_popularity;
-DROP TABLE IF EXISTS genre;
 DROP TABLE IF EXISTS track_genre;
 DROP TABLE IF EXISTS track_popularity;
 DROP TABLE IF EXISTS track_artist;
+DROP TABLE IF EXISTS artist;
+DROP TABLE IF EXISTS genre;
 DROP TABLE IF EXISTS track;
 
 CREATE TABLE IF NOT EXISTS track (
@@ -14,12 +14,12 @@ CREATE TABLE IF NOT EXISTS track (
     track_valence INT NOT NULL,
     track_tempo INT NOT NULL,
     track_speechiness INT NOT NULL,
-    in_spotify BOOLEAN NOT NULL;
-    in_tiktok BOOLEAN NOT NULL DEFAULT false;
+    in_spotify BOOLEAN NOT NULL,
+    in_tiktok BOOLEAN NOT NULL DEFAULT false,
     tiktok_rank INT,
     spotify_rank INT,
     spotify_id VARCHAR(200),
-    PRIMARY KEY track_id,
+    PRIMARY KEY(track_id)
 );
 
 CREATE TABLE IF NOT EXISTS artist (
@@ -30,17 +30,17 @@ CREATE TABLE IF NOT EXISTS artist (
 
 CREATE TABLE IF NOT EXISTS artist_popularity (
     popularity_id INT GENERATED ALWAYS AS IDENTITY,
-    artist_id INT NOT NULL
+    artist_id INT NOT NULL,
     follower_count INT NOT NULL,
     recording_at TIMESTAMP NOT NULL,
-    PRIMARY KEY(popularity_id)
+    PRIMARY KEY(popularity_id),
     FOREIGN KEY(artist_id) REFERENCES artist(artist_id)
 );
 
 CREATE TABLE IF NOT EXISTS genre (
     genre_id INT GENERATED ALWAYS AS IDENTITY,
     genre_name VARCHAR(100),
-    PRIMARY KEY(popularity_id)
+    PRIMARY KEY(genre_id)
 );
 
 CREATE TABLE IF NOT EXISTS track_genre (
@@ -54,9 +54,9 @@ CREATE TABLE IF NOT EXISTS track_genre (
 
 CREATE TABLE IF NOT EXISTS track_popularity (
     track_popularity_id INT GENERATED ALWAYS AS IDENTITY,
-    track_id,
-    popularity_score,
-    recording_at, TIMESTAMP NOT NULL,
+    track_id INT NOT NULL,
+    popularity_score INT NOT NULL,
+    recording_at TIMESTAMP NOT NULL,
     PRIMARY KEY(track_popularity_id),
     FOREIGN KEY(track_id) REFERENCES track(track_id)
 );
