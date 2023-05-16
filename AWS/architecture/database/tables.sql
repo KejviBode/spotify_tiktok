@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS artist (
 CREATE TABLE IF NOT EXISTS artist_popularity (
     popularity_id INT GENERATED ALWAYS AS IDENTITY,
     artist_id INT NOT NULL,
+    artist_popularity INT NOT NULL,
     follower_count INT NOT NULL,
     recording_at TIMESTAMP NOT NULL,
     PRIMARY KEY(popularity_id),
@@ -68,4 +69,3 @@ CREATE TABLE IF NOT EXISTS track_artist (
     FOREIGN KEY(track_id) REFERENCES track(track_id),
     FOREIGN KEY(artist_id) REFERENCES artist(artist_id)
 );
-
