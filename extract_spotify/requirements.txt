@@ -1,4 +1,6 @@
 requests
 bs4
 selenium
-urllib3==1.26.6 
+urllib3==1.26.6
+spacy
+rapidfuzz
