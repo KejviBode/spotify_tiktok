@@ -1,14 +1,20 @@
+"""Daily Lambda"""
+
 import base64
+import csv
 import json
 import os
 from dotenv import load_dotenv
 from requests import post, get
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from boto3.session import Session
 
-
+BUCKET_NAME = ""
 SPOTIFY_BASE_URL = "http://api.spotify.com/v1/"
 TOP_50_PLAYLIST_ID = "37i9dQZEVXbMDoHDwVN2tF"
+TRACK_FILENAME = 'track_ids.csv'
+ARTIST_FILENAME = 'artist_ids.csv'
 
 
 def get_auth_token() -> str:
@@ -116,7 +122,7 @@ def get_db_connection():
             password = os.getenv("DB_PASSWORD"),
             host = os.getenv("DB_HOST"),
             port = os.getenv("DB_PORT"),
-            database = os.getenv("DB_NAME")
+            database = os.getenv("DB")
             )
         print("connected")
         return conn
@@ -171,7 +177,9 @@ def add_artist_data(data: list):
                     for genre in artist["genres"]:
                         genre_id = add_genre(genre)
                         add_artist_genre(genre_id)
+            artist["table_id"] = artist_id
             add_track_artist(track["table_id"], artist_id)
+    return data
 
 
 def add_artist_popularity_data(artist_id: str, popularity: int, follower_count: int):
@@ -230,8 +238,48 @@ def add_track_artist(track_id: int, artist_id: int):
         conn.commit()
 
 
+def empty_s3(bucket_name: str):
+    """Empties yesterday's csv files from the s3 bucket"""
+    bucket = s3.list_objects(Bucket=bucket_name)
+    for obj in bucket["Contents"]:
+        if ".csv" in obj["Key"]:
+            s3.delete_object(Bucket=bucket_name, Key=obj["Key"])
+
+
+def create_saved_data_list(data: list[dict]):
+    """Takes in the tracks data and create a list of spotify and table ids"""
+    track_ids = []
+    artist_ids = []
+
+    for track in data:
+        track_ids.append({'spotify_id': track['id'], 'table_id': track['table_id']})
+        for artist in track['artists']:
+            artist_ids.append({'spotify_id': artist['id'], 'table_id': artist['table_id']})
+
+    track_ids = list({item['spotify_id']: item for item in track_ids}.values())
+    artist_ids = list({item['spotify_id']: item for item in artist_ids}.values())
+
+    return track_ids, artist_ids
+
+
+def convert_to_csv(data: list, filename: str):
+    """Converts a list of dictionaries to a csv file"""
+    keys = data[0].keys()
+    with open(filename, 'w', newline='') as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=keys)
+        writer.writeheader()
+        writer.writerows(data)
+
+
 if __name__ == "__main__":
     load_dotenv()
+
+    aws_session = Session(aws_access_key_id=os.getenv("AWS_ACCESS_KEY",
+                      aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")))
+    
+    s3 = aws_session.client('s3')
+    empty_s3(BUCKET_NAME)
+
     client_id = os.getenv("CLIENT_ID")
     client_secret = os.getenv("CLIENT_SECRET")
     token = get_auth_token()
@@ -242,4 +290,12 @@ if __name__ == "__main__":
 
     conn = get_db_connection()
     data_with_id = add_track_data(tracks)
-    add_artist_data(data_with_id)
+    data_with_artist_id = add_artist_data(data_with_id)
+
+    track_ids, artist_ids = create_saved_data_list(data_with_artist_id)
+
+    convert_to_csv(track_ids, TRACK_FILENAME)
+    convert_to_csv(artist_ids, ARTIST_FILENAME)
+
+    s3.upload_file(TRACK_FILENAME, BUCKET_NAME, TRACK_FILENAME)
+    s3.upload_file(ARTIST_FILENAME, BUCKET_NAME, ARTIST_FILENAME)
