@@ -60,11 +60,11 @@ def create_track_dicts(items: list[dict]) -> list[dict]:
         track["in_tiktok"] = False
         track["popularity"] = get_track_popularity(track["id"], headers)
         audio_features = get_track_audio_features(track["id"], headers)
-        track["danceability"] = audio_features[0]
-        track["energy"] = audio_features[1]
-        track["valence"] = audio_features[2]
-        track["tempo"] = audio_features[3]
-        track["speechiness"] = audio_features[4]
+        track["danceability"] = audio_features["danceability"]
+        track["energy"] = audio_features["energy"]
+        track["valence"] = audio_features["valence"]
+        track["tempo"] = audio_features["tempo"]
+        track["speechiness"] = audio_features["speechiness"]
 
         track["artists"] = []
         for artist in item["track"]["artists"]:
@@ -72,9 +72,9 @@ def create_track_dicts(items: list[dict]) -> list[dict]:
             artist_dict["id"] = artist["id"]
             artist_dict["name"] = artist["name"]
             artist_followers = get_artist_followers(artist["id"], headers)
-            artist_dict["popularity"] = artist_followers[0]
-            artist_dict["follower_count"] = artist_followers[1]
-            artist_dict["genres"] = artist_followers[2]
+            artist_dict["popularity"] = artist_followers["popularity"]
+            artist_dict["follower_count"] = artist_followers["follower_count"]
+            artist_dict["genres"] = artist_followers["genres"]
             track["artists"].append(artist_dict)
         tracks.append(track)
     return tracks
@@ -84,10 +84,11 @@ def get_artist_followers(artist_id: str, headers: dict) ->tuple:
     """Takes an artist id and gets the popularity rating and follower count for that artist"""
     result = get(f"{SPOTIFY_BASE_URL}artists/{artist_id}", headers=headers, timeout=10)
     result = json.loads(result.content)
-    popularity = result["popularity"]
-    follower_count = result["followers"]["total"]
-    genres = result["genres"]
-    return (popularity, follower_count, genres)
+    artist_followers = {}
+    artist_followers["popularity"] = result["popularity"]
+    artist_followers["follower_count"] = result["followers"]["total"]
+    artist_followers["genres"] = result["genres"]
+    return artist_followers
 
 
 def get_track_popularity(track_id: str, headers: dict) -> tuple:
@@ -105,12 +106,13 @@ def get_track_audio_features(track_id: str, headers: dict) -> tuple:
     """Takes a track id and gets danceability, energy, valence, tempo, and speechiness scores"""
     result = get(f"{SPOTIFY_BASE_URL}audio-features/{track_id}", headers=headers, timeout=10)
     result = json.loads(result.content)
-    danceability = result["danceability"]
-    energy = result["energy"]
-    valence = result["valence"]
-    tempo = result["tempo"]
-    speechiness = result["speechiness"]
-    return (danceability, energy, valence, tempo, speechiness)
+    audio_features = {}
+    audio_features["danceability"] = result["danceability"]
+    audio_features["energy"] = result["energy"]
+    audio_features["valence"] = result["valence"]
+    audio_features["tempo"] = result["tempo"]
+    audio_features["speechiness"] = result["speechiness"]
+    return audio_features
 
 
 def get_db_connection():
