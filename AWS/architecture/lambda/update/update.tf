@@ -121,10 +121,10 @@ resource "aws_lambda_function" "update" {
   environment {
     variables = {
       DB_PORT     = 5432
-      DB_USER     = "postgres"
-      DB_HOST     = "complete..."
-      DB_NAME     = "production_48_hour"
-      DB_PASSWORD = "sigmastudent"
+      DB_USER     = var.DB_USER
+      DB_HOST     = var.DB_HOST
+      DB_NAME     = var.DB_NAME
+      DB_PASSWORD = var.DB_PASSWORD
     }
   }
 }
