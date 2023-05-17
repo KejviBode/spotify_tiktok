@@ -16,7 +16,7 @@ TRACK_FILENAME = 'track_ids.csv'
 ARTIST_FILENAME = 'artist_ids.csv'
 
 
-def get_auth_token() -> str:
+def get_auth_token(client_id: str, client_secret: str) -> str:
     """Gets an authorisation token from Spotify API"""
     auth_string = f"{client_id}:{client_secret}"
     auth_bytes = auth_string.encode("utf-8")
@@ -80,7 +80,7 @@ def create_track_dicts(items: list[dict]) -> list[dict]:
     return tracks
 
 
-def get_artist_followers(artist_id: str, headers: dict) ->tuple:
+def get_artist_followers(artist_id: str, headers: dict) -> dict:
     """Takes an artist id and gets the popularity rating and follower count for that artist"""
     result = get(f"{SPOTIFY_BASE_URL}artists/{artist_id}", headers=headers, timeout=10)
     result = json.loads(result.content)
@@ -91,7 +91,7 @@ def get_artist_followers(artist_id: str, headers: dict) ->tuple:
     return artist_followers
 
 
-def get_track_popularity(track_id: str, headers: dict) -> tuple:
+def get_track_popularity(track_id: str, headers: dict) -> str:
     """Takes a track id and gets the popularity rating of that track"""
     result = get(f"{SPOTIFY_BASE_URL}tracks/{track_id}", headers=headers, timeout=10)
     result = json.loads(result.content)
@@ -102,7 +102,7 @@ def get_track_popularity(track_id: str, headers: dict) -> tuple:
     return popularity
 
 
-def get_track_audio_features(track_id: str, headers: dict) -> tuple:
+def get_track_audio_features(track_id: str, headers: dict) -> dict:
     """Takes a track id and gets danceability, energy, valence, tempo, and speechiness scores"""
     result = get(f"{SPOTIFY_BASE_URL}audio-features/{track_id}", headers=headers, timeout=10)
     result = json.loads(result.content)
@@ -146,7 +146,7 @@ def add_track_data(data: list[dict]) -> list[dict]:
                     track["spotify_rank"], track["id"]]
             cur.execute(sql_input, vals)
             conn.commit()
-        add_track_popularity(track["id"], track["popularity"])
+        add_track_popularity(track["id"], track["popularity"], conn)
     return data
 
 
@@ -160,7 +160,7 @@ def add_artist_data(data: list):
                 vals = [artist["name"], artist["id"]]
                 cur.execute(sql_input, vals)
                 conn.commit()
-            add_artist_popularity_data(artist["id"], artist["popularity"], artist["follower_count"])
+            add_artist_popularity_data(artist["id"], artist["popularity"], artist["follower_count"], conn)
             for genre in artist["genres"]:
                 genre_id = add_genre(genre)
                 add_artist_genre(genre_id, artist["id"])
@@ -168,7 +168,7 @@ def add_artist_data(data: list):
     return data
 
 
-def add_artist_popularity_data(artist_id: str, popularity: int, follower_count: int):
+def add_artist_popularity_data(artist_id: str, popularity: int, follower_count: int, conn):
     """Takes in data on artist popularity and enters into the artist_popularity table"""
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_input = "INSERT INTO artist_popularity (artist_spotify_id, artist_popularity, \
@@ -200,7 +200,7 @@ def add_artist_genre(genre_id: int, artist_id: int):
         conn.commit()
 
 
-def add_track_popularity(track_id: int, popularity: int):
+def add_track_popularity(track_id: int, popularity: int, conn):
     """Takes in a track id and popularity and adds them to the track_popularity table"""
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_input = "INSERT INTO track_popularity (track_spotify_id, popularity_score)\
@@ -225,7 +225,8 @@ if __name__ == "__main__":
 
     client_id = os.getenv("CLIENT_ID")
     client_secret = os.getenv("CLIENT_SECRET")
-    token = get_auth_token()
+
+    token = get_auth_token(client_id, client_secret)
     print("Connected to API")
 
     headers = get_auth_header(token)
