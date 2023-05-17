@@ -1,9 +1,11 @@
-import os, json
-from dotenv import load_dotenv
 import base64
+import json
+import os
+from dotenv import load_dotenv
 from requests import post, get
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
-from pprint import pprint
 
 SPOTIFY_BASE_URL = "http://api.spotify.com/v1/"
 TOP_50_PLAYLIST_ID = "37i9dQZEVXbMDoHDwVN2tF"
@@ -32,10 +34,14 @@ def get_auth_header(token: str) -> dict:
 
 
 def get_spotify_top_50(top_50_uri: str, headers: dict) -> list[dict]:
-    """Takes playlist id and returns dictionary of tracks in the playlist"""
+    """Takes playlist id and returns list of dictionaries of tracks in the playlist"""
     result = get(f"{SPOTIFY_BASE_URL}playlists/{top_50_uri}/tracks", headers=headers, timeout=10)
     result = json.loads(result.content)
-    items = result["items"]
+    return result["items"]
+
+
+def create_track_dicts(items: list[dict]) -> list[dict]:
+    """Takes in a list of playlist items and returns a list of dictionaries of each track"""
     tracks = []
     rank = 0
     for item in items:
@@ -102,6 +108,128 @@ def get_track_audio_features(track_id: str, headers: dict) -> tuple:
     return (danceability, energy, valence, tempo, speechiness)
 
 
+def get_db_connection():
+    """Connects to the database"""
+    try:
+        conn = psycopg2.connect(
+            user = os.getenv("DB_USER"),
+            password = os.getenv("DB_PASSWORD"),
+            host = os.getenv("DB_HOST"),
+            port = os.getenv("DB_PORT"),
+            database = os.getenv("DB_NAME")
+            )
+        print("connected")
+        return conn
+    except Exception as e:
+        print(e)
+        print("Error connecting to database.")
+
+
+def add_track_data(data: list[dict]) -> list[dict]:
+    """Takes in data on tracks and inserts track details into the track table"""
+    for track in data:
+        with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+            sql_input = "INSERT INTO track (track_name, track_danceability, track_energy, \
+                track_valence, track_tempo, track_speechiness, in_spotify, in_tiktok, \
+                    tiktok_rank, spotify_rank, spotify_id)\
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING"
+            vals = [track["name"], track["danceability"], track["energy"], track["valence"], \
+                    track["tempo"], track["speechiness"], track["in_spotify"], \
+                    track["in_tiktok"], track["tiktok_rank"], \
+                    track["spotify_rank"], track["id"]]
+            cur.execute(sql_input, vals)
+            conn.commit()
+            result = cur.fetchone()
+            if result is not None:
+                track_id = result["track_id"]
+                track["table_id"] = track_id
+            add_track_popularity(track_id, track["popularity"])
+    return data
+
+
+def add_artist_data(data: list):
+    """Takes in data on tracks and inserts artist details into the artist table"""
+    for track in data:
+        for artist in track["artists"]:
+            with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+
+                cur.execute("SELECT artist_id FROM artist WHERE artist_spotify_id\
+                             = %s", (artist["id"]))
+                existing_artist = cur.fetchone()
+
+                if existing_artist:
+                    artist_id = existing_artist[0]
+                else:
+
+                    sql_input = "INSERT INTO artist (spotify_name, artist_spotify_id)\
+                        VALUES (%s, %s) ON CONFLICT DO NOTHING"
+                    vals = [artist["name"], artist["id"]]
+                    cur.execute(sql_input, vals)
+                    artist_id = cur.fetchone()["artist_id"]
+                    conn.commit()
+                    add_artist_popularity_data(artist_id, artist["popularity"], artist["follower_count"])
+                    for genre in artist["genres"]:
+                        genre_id = add_genre(genre)
+                        add_artist_genre(genre_id)
+            add_track_artist(track["table_id"], artist_id)
+
+
+def add_artist_popularity_data(artist_id: str, popularity: int, follower_count: int):
+    """Takes in data on artist popularity and enters into the artist_popularity table"""
+    with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        sql_input = "INSERT INTO artist_popularity (artist_id, artist_popularity, \
+            follower_count)\
+                    VALUES (%s, %s, %s) ON CONFLICT DO NOTHING"
+        vals = [artist_id, popularity, follower_count]
+        cur.execute(sql_input, vals)
+        conn.commit()
+
+
+def add_genre(genre_name: str) -> int:
+    """Takes in a genre name, adds to the database if not there, and returns genre id"""
+    with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute("SELECT genre_id FROM genre WHERE genre_name = %s", (genre_name,))
+        existing_genre = cur.fetchone()
+        if existing_genre:
+            genre_id = existing_genre[0]
+        else:
+            cur.execute("INSERT INTO genre (genre_name) VALUES (%s) \
+                        RETURNING genre_id", (genre_name))
+            genre_id = cur.fetchone()[0]
+        conn.commit()
+    return genre_id
+
+
+def add_artist_genre(genre_id: int, artist_id: int):
+    """Takes in a genre id and artist id and adds them to the artist_genre table"""
+    with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        sql_input = "INSERT INTO artist_genre (genre_id, artist_id)\
+                    VALUES (%s, %s) ON CONFLICT DO NOTHING"
+        vals = [genre_id, artist_id]
+        cur.execute(sql_input, vals)
+        conn.commit()
+
+
+def add_track_popularity(track_id: int, popularity: int):
+    """Takes in a track id and popularity and adds them to the track_popularity table"""
+    with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        sql_input = "INSERT INTO track_popularity (track_id, popularity_score)\
+                    VALUES (%s, %s) ON CONFLICT DO NOTHING"
+        vals = [track_id, popularity]
+        cur.execute(sql_input, vals)
+        conn.commit()
+
+
+def add_track_artist(track_id: int, artist_id: int):
+    """Takes in a track id and artist id and adds them to the track_artist table"""
+    with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        sql_input = "INSERT INTO track_artist (track_id, artist_id)\
+                    VALUES (%s, %s) ON CONFLICT DO NOTHING"
+        vals = [track_id, artist_id]
+        cur.execute(sql_input, vals)
+        conn.commit()
+
+
 if __name__ == "__main__":
     load_dotenv()
     client_id = os.getenv("CLIENT_ID")
@@ -110,6 +238,8 @@ if __name__ == "__main__":
 
     headers = get_auth_header(token)
     result = get_spotify_top_50(TOP_50_PLAYLIST_ID, headers)
-    for item in result:
-        pprint(item)
-        print("   ")
+    tracks = create_track_dicts(result)
+
+    conn = get_db_connection()
+    data_with_id = add_track_data(tracks)
+    add_artist_data(data_with_id)
