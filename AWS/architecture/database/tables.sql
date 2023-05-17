@@ -8,12 +8,12 @@ DROP TABLE IF EXISTS track;
 
 CREATE TABLE IF NOT EXISTS track (
     track_id INT GENERATED ALWAYS AS IDENTITY,
-    track_name VARCHAR(200),
-    track_danceability INT NOT NULL,
-    track_energy INT NOT NULL,
-    track_valence INT NOT NULL,
-    track_tempo INT NOT NULL,
-    track_speechiness INT NOT NULL,
+    track_name VARCHAR(200) NOT NULL,
+    track_danceability FLOAT NOT NULL,
+    track_energy FLOAT NOT NULL,
+    track_valence FLOAT NOT NULL,
+    track_tempo FLOAT NOT NULL,
+    track_speechiness FLOAT NOT NULL,
     in_spotify BOOLEAN NOT NULL,
     in_tiktok BOOLEAN NOT NULL DEFAULT false,
     tiktok_rank INT,
@@ -44,12 +44,12 @@ CREATE TABLE IF NOT EXISTS genre (
     PRIMARY KEY(genre_id)
 );
 
-CREATE TABLE IF NOT EXISTS track_genre (
-    track_genre_id INT GENERATED ALWAYS AS IDENTITY,
-    track_id INT NOT NULL,
+CREATE TABLE IF NOT EXISTS artist_genre (
+    artist_genre_id INT GENERATED ALWAYS AS IDENTITY,
+    artist_id INT NOT NULL,
     genre_id INT NOT NULL,
     PRIMARY KEY(track_genre_id),
-    FOREIGN KEY(track_id) REFERENCES track(track_id),
+    FOREIGN KEY(artist_id) REFERENCES artist(artist_id),
     FOREIGN KEY(genre_id) REFERENCES genre(genre_id)
 );
 
@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS track_artist (
     track_artist_id INT GENERATED ALWAYS AS IDENTITY,
     track_id INT NOT NULL,
     artist_id INT NOT NULL,
+    PRIMARY KEY(track_artist_id)
     FOREIGN KEY(track_id) REFERENCES track(track_id),
     FOREIGN KEY(artist_id) REFERENCES artist(artist_id)
 );
