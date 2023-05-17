@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS track (
 
 CREATE TABLE IF NOT EXISTS artist (
     artist_spotify_id VARCHAR(200) NOT NULL,
-    spotify_name VARCHAR(100),
+    spotify_name VARCHAR(100) UNIQUE,
     PRIMARY KEY(artist_spotify_id)
 );
 
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS artist_popularity (
 
 CREATE TABLE IF NOT EXISTS genre (
     genre_id INT GENERATED ALWAYS AS IDENTITY,
-    genre_name VARCHAR(100),
+    genre_name VARCHAR(100) UNIQUE,
     PRIMARY KEY(genre_id)
 );
 

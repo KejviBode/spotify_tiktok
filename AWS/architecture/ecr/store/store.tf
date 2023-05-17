@@ -14,7 +14,7 @@ provider "aws" {
 }
 
 resource "aws_ecr_repository" "long_term_image" {
-  name                 = "spotify-tiktok-48-hour-storage"
+  name                 = "spotify-tiktok-storage"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {

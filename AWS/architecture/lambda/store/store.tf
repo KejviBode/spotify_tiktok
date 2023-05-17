@@ -35,7 +35,7 @@ resource "aws_iam_role" "iam_for_lambda" {
 
 # specify lambda function logs aand how long before they are deleted
 resource "aws_cloudwatch_log_group" "function_log_group" {
-  name              = "/aws/lambda/${aws_lambda_function.store.function_name}"
+  name              = "/aws/lambda/${aws_lambda_function.spotify-tiktok-storage.function_name}"
   retention_in_days = 7
   lifecycle {
     prevent_destroy = false
@@ -44,7 +44,7 @@ resource "aws_cloudwatch_log_group" "function_log_group" {
 
 # Allows logs
 resource "aws_iam_policy" "function_logging_policy" {
-  name = "function-logging-policy"
+  name = "function-logging-policy_spotify_store"
   policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
@@ -67,26 +67,26 @@ resource "aws_iam_role_policy_attachment" "function_logging_policy_attachment" {
 }
 
 # trigger schedule 
-resource "aws_cloudwatch_event_rule" "two_day_trigger" {
-  name                = "spotify_tiktok_two_day_trigger"
-  description         = "Update artist followers and popularity"
-  schedule_expression = "cron(30 * * * ? *)"
+resource "aws_cloudwatch_event_rule" "store_daily_trigger" {
+  name                = "spotify_tiktok_store_daily_trigger"
+  description         = "Store old data in CSV"
+  schedule_expression = "cron(50 11 * * ? *)"
 }
 
 # link trigger to lambda
 resource "aws_cloudwatch_event_target" "lambda_target" {
-  arn       = aws_lambda_function.store.arn
-  rule      = aws_cloudwatch_event_rule.two_day_trigger.name
-  target_id = "songs-hourly-target"
+  arn       = aws_lambda_function.spotify-tiktok-storage.arn
+  rule      = aws_cloudwatch_event_rule.store_daily_trigger.name
+  target_id = "songs-daily-store-target"
 }
 
 #change
 resource "aws_lambda_permission" "allow_cloudwatch_to_call_rw_fallout_retry_step_deletion_lambda" {
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.store.function_name
+  function_name = aws_lambda_function.spotify-tiktok-storage.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.two_day_trigger.arn
+  source_arn    = aws_cloudwatch_event_rule.store_daily_trigger.arn
 }
 
 variable "DB_HOST" {
@@ -107,16 +107,15 @@ variable "DB_PASSWORD" {
 }
 
 #definitely change
-resource "aws_lambda_function" "store" {
-  function_name = "spotify-tiktok-daily-store"
+resource "aws_lambda_function" "spotify-tiktok-storage" {
+  function_name = "spotify-tiktok-storage"
   role          = aws_iam_role.iam_for_lambda.arn
   architectures = ["arm64"]
 
   package_type = "Image"
-  image_uri    = "complete..."
+  image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-storage:latest"
 
   timeout = 120
-  runtime = "nodejs16.x"
 
   environment {
     variables = {
