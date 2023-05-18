@@ -185,12 +185,13 @@ def add_artist_data(data: list, conn) -> None:
                 vals = [artist["name"], artist["id"]]
                 cur.execute(sql_input, vals)
                 conn.commit()
+
             for genre in artist["genres"]:
                 genre_id = add_genre(genre, conn)
                 add_artist_genre(genre_id, artist["id"], conn)
             add_track_artist(track["id"], artist["id"], conn)
 
-
+            
 def add_genre(genre_name: str, conn) -> int:
     '''
     Takes in a genre name, adds to the database if not there, and returns genre id
@@ -214,6 +215,7 @@ def add_artist_genre(genre_id: int, artist_id: int, conn):
         vals = [genre_id, artist_id]
         cur.execute(sql_input, vals)
         conn.commit()
+
 
 
 def add_track_artist(track_id: int, artist_id: int, conn):
@@ -259,6 +261,7 @@ def handler(event=None, context=None):
     load_dotenv()
     client_id = os.getenv("CLIENT_ID")
     client_secret = os.getenv("CLIENT_SECRET")
+
     token = get_auth_token(client_id, client_secret)
     print("Connected to API")
 
@@ -282,6 +285,7 @@ def handler(event=None, context=None):
     print("Complete!\n")
 
     conn = get_db_connection()
+
     print("Adding spotify tracks")
     add_track_data(spotify_tracks, conn)
     print("Complete!\n")
@@ -294,6 +298,7 @@ def handler(event=None, context=None):
     print("Adding tiktok artists")
     add_artist_data(unmatched_tiktok_songs, conn)
     print("Complete!\n")
+
     print("Success!")
     END = datetime.now()
     PROCESS = END - START
