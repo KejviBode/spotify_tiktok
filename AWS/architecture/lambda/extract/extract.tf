@@ -29,7 +29,7 @@ data "aws_iam_policy_document" "assume_role" {
 
 #create iam role to define roles
 resource "aws_iam_role" "iam_for_lambda" {
-  name               = "iam_for_lambda"
+  name               = "iam_for_lambda_spotify_extract"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
@@ -44,7 +44,7 @@ resource "aws_cloudwatch_log_group" "function_log_group" {
 
 # Allows logs
 resource "aws_iam_policy" "function_logging_policy" {
-  name = "function-logging-policy"
+  name = "function-logging-policy_spotify_extract"
   policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
@@ -67,27 +67,27 @@ resource "aws_iam_role_policy_attachment" "function_logging_policy_attachment" {
 }
 
 # trigger schedule 
-resource "aws_cloudwatch_event_rule" "daily_trigger" {
-  name                = "spotify_tiktok_daily_trigger"
-  description         = "Transfer old data from sql to S3 Bucket"
-  schedule_expression = "cron(0 8 * * ? *)"
-}
+# resource "aws_cloudwatch_event_rule" "daily_trigger" {
+#   name                = "spotify_tiktok_daily_trigger"
+#   description         = "Transfer old data from sql to S3 Bucket"
+#   schedule_expression = "cron(0 8 * * ? *)"
+# }
 
-# link trigger to lambda
-resource "aws_cloudwatch_event_target" "lambda_target" {
-  arn       = aws_lambda_function.extract.arn
-  rule      = aws_cloudwatch_event_rule.daily_trigger.name
-  target_id = "songs-daily-target"
-}
+# # link trigger to lambda
+# resource "aws_cloudwatch_event_target" "lambda_target" {
+#   arn       = aws_lambda_function.extract.arn
+#   rule      = aws_cloudwatch_event_rule.daily_trigger.name
+#   target_id = "songs-daily-target"
+# }
 
 #change
-resource "aws_lambda_permission" "allow_cloudwatch_to_call_rw_fallout_retry_step_deletion_lambda" {
-  statement_id  = "AllowExecutionFromCloudWatch"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.extract.function_name
-  principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.daily_trigger.arn
-}
+# resource "aws_lambda_permission" "allow_cloudwatch_to_call_rw_fallout_retry_step_deletion_lambda" {
+#   statement_id  = "AllowExecutionFromCloudWatch"
+#   action        = "lambda:InvokeFunction"
+#   function_name = aws_lambda_function.extract.function_name
+#   principal     = "events.amazonaws.com"
+#   source_arn    = aws_cloudwatch_event_rule.daily_trigger.arn
+# }
 
 variable "DB_HOST" {
   type      = string
@@ -113,6 +113,14 @@ variable "SECRET_KEY_ID" {
   type      = string
   sensitive = true
 }
+variable "CLIENT_ID" {
+  type      = string
+  sensitive = true
+}
+variable "CLIENT_SECRET" {
+  type      = string
+  sensitive = true
+}
 
 #definitely change
 resource "aws_lambda_function" "extract" {
@@ -121,20 +129,22 @@ resource "aws_lambda_function" "extract" {
   architectures = ["arm64"]
 
   package_type = "Image"
-  image_uri    = "complete..."
+  image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-daily-extraction:latest"
 
   timeout = 120
   runtime = "nodejs16.x"
 
   environment {
     variables = {
-      DB_PORT     = 5432
-      DB_USER     = var.DB_USER
-      DB_HOST     = var.DB_HOST
-      DB_NAME     = var.DB_NAME
-      DB_PASSWORD = var.DB_PASSWORD
+      DB_PORT       = 5432
+      DB_USER       = var.DB_USER
+      DB_HOST       = var.DB_HOST
+      DB_NAME       = var.DB_NAME
+      DB_PASSWORD   = var.DB_PASSWORD
       ACCESS_KEY_ID = var.ACCESS_KEY_ID
       SECRET_KEY_ID = var.SECRET_KEY_ID
+      CLIENT_ID     = var.CLIENT_ID
+      CLIENT_SECRET = var.CLIENT_SECRET
     }
   }
 }
