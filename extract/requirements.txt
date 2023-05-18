@@ -4,5 +4,4 @@ psycopg2-binary
 bs4
 selenium
 urllib3==1.26.6
-spacy
 rapidfuzz

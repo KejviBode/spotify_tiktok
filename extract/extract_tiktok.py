@@ -3,9 +3,9 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.firefox.options import Options
 from bs4 import BeautifulSoup
 from rapidfuzz import fuzz
-from rapidfuzz.distance import Levenshtein
 from datetime import datetime
 from pprint import pprint
 import string
@@ -27,7 +27,18 @@ def load_tiktok_html_soup(url: str = TIKTOK_BASE_URL) -> BeautifulSoup:
     Loads the TikTok charts page, making it scrapeable using selenium
     and returns a Beautiful Soup object
     '''
-    driver = webdriver.Firefox()
+    firefox_options = Options()
+    firefox_options.add_argument("-headless")
+    firefox_options.add_argument("-safe-mode")
+    os.mkdir("./profile/")
+    ff_profile = webdriver.FirefoxProfile(profile_directory="./profile")
+    br_version = "113.0.1"
+    driver_version = "0.33.0"
+    driver = webdriver.Firefox(firefox_profile=ff_profile,
+                               firefox_binary='./opt/firefox/' + br_version + '/firefox',
+                               executable_path='./opt/geckodriver/' + driver_version + '/geckodriver',
+                               options=firefox_options,
+                               service_log_path=os.devnull)
     driver.get(url)
     driver.add_cookie(TIKTOK_COOKIE)
     got_it_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "detailBtnTips-got--D3sdb")))
