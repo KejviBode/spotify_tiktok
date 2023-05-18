@@ -4,3 +4,4 @@ test
 .vscode
 sns_lambda
 geckodriver.log
+extract/debug.py

@@ -22,6 +22,7 @@ TRACK_FILENAME = 'track_ids.csv'
 ARTIST_FILENAME = 'artist_ids.csv'
 TIKTOK_BASE_URL = "https://ads.tiktok.com/business/creativecenter/inspiration/popular/music/pad/en"
 TIKTOK_COOKIE = {"name": "cookie-consent", "value": "{%22ga%22:true%2C%22af%22:true%2C%22fbp%22:true%2C%22lip%22:true%2C%22bing%22:true%2C%22ttads%22:true%2C%22reddit%22:true%2C%22criteo%22:true%2C%22version%22:%22v9%22}"}
+AUDIO_FEATURE_KEYS = ["id", "danceability", "energy", "valence", "tempo", "speechiness"]
 
 
 def get_auth_token(client_id: str, client_secret: str) -> str:
@@ -131,7 +132,7 @@ def get_db_connection():
             password = os.getenv("DB_PASSWORD"),
             host = os.getenv("DB_HOST"),
             port = os.getenv("DB_PORT"),
-            database = os.getenv("DB")
+            database = os.getenv("DB_NAME")
             )
         print("Connected")
         return conn
@@ -231,19 +232,23 @@ def add_track_artist(track_id: int, artist_id: int):
 def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> list[dict]:
     for track in unmatched_tiktok_songs:
         if "id" not in track.keys():
-            print("Track has no id and cannot be searched")
-            continue
-        audio_features = get_track_audio_features(track["id"], headers)
-        track["danceability"] = audio_features["danceability"]
-        track["energy"] = audio_features["energy"]
-        track["valence"] = audio_features["valence"]
-        track["tempo"] = audio_features["tempo"]
-        track["speechiness"] = audio_features["speechiness"]
-        for artist in track["db_artists"]:
-            artist_followers = get_artist_followers(artist["id"], headers)
-            artist["popularity"] = artist_followers["popularity"]
-            artist["follower_count"] = artist_followers["follower_count"]
-            artist["genres"] = artist_followers["genres"]
+            print(f"Track is missing id and cannot be used to find audio features")
+        else:
+            audio_features = get_track_audio_features(track["id"], headers)
+            print(audio_features)
+            for key in AUDIO_FEATURE_KEYS:
+                if key not in audio_features.keys():
+                    print(f"Track is missing key: {key} and cannot be used")
+            track["danceability"] = audio_features["danceability"]
+            track["energy"] = audio_features["energy"]
+            track["valence"] = audio_features["valence"]
+            track["tempo"] = audio_features["tempo"]
+            track["speechiness"] = audio_features["speechiness"]
+            for artist in track["artists"]:
+                artist_followers = get_artist_followers(artist["id"], headers)
+                artist["popularity"] = artist_followers["popularity"]
+                artist["follower_count"] = artist_followers["follower_count"]
+                artist["genres"] = artist_followers["genres"]
     return unmatched_tiktok_songs
 
 
@@ -256,10 +261,10 @@ if __name__ == "__main__":
     print("Connected to API")
 
     headers = get_auth_header(token)
+    print("Gathering top 50")
     result = get_spotify_top_50(TOP_50_PLAYLIST_ID, headers)
     spotify_tracks = create_track_dicts(result)
-    print("Gathered top 50")
-
+    print("Complete!")
 
     ### Write tiktok code here
     print("Fetching html from TikTok charts...")
@@ -271,10 +276,10 @@ if __name__ == "__main__":
     print("Matching tiktok songs to spotify counterparts...")
     unmatched_tiktok_songs = match_tiktok_to_spotify(tiktok_songs, spotify_tracks)
     print("Complete!")
+    print("Gathering tiktok attributes from spotify api")
     get_tiktok_tracks_api_info(unmatched_tiktok_songs, headers)
     get_tiktok_attributes(unmatched_tiktok_songs, headers)
-
-
+    print("Complete!")
 
     conn = get_db_connection()
     print("Adding spotify tracks")
@@ -283,6 +288,11 @@ if __name__ == "__main__":
     print("Adding spotify artists")
     data_with_artist_id = add_artist_data(data_with_id, conn)
     print("Added spotify artists")
-    add_track_data(unmatched_tiktok_songs)
-    add_artist_data(unmatched_tiktok_songs)
+    print("Adding tiktok songs")
+    add_track_data(unmatched_tiktok_songs, conn)
+    print("")
+    add_artist_data(unmatched_tiktok_songs, conn)
     print("Success!")
+    END = datetime.now()
+    PROCESS = END - START
+    print(f"Run time: {PROCESS}")
