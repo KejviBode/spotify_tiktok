@@ -128,7 +128,11 @@ def search_api_track(track_name: str, artist_names: list[str], with_artist: bool
     return json_result
 
 
-def attempt_multiple_searches(song_name: str, song_artist: list[str], headers):
+def attempt_multiple_searches(song_name: str, song_artist: list[str], headers) -> list[dict]:
+    '''
+    Will search the spotify API multiple times with different query urls
+    depending on whether or not it receives a result initially
+    '''
     track = search_api_track(song_name, song_artist, True, False, headers)
     if len(track) == 0:
         print(f"Error obtaining track information for: {song_name}")
@@ -151,9 +155,10 @@ def attempt_multiple_searches(song_name: str, song_artist: list[str], headers):
     return track
 
 
-
 def get_auth_token(client_id, client_secret) -> str:
-    """Gets an authorisation token from Spotify API"""
+    '''
+    Gets an authorisation token from Spotify API
+    '''
     auth_string = f"{client_id}:{client_secret}"
     auth_bytes = auth_string.encode("utf-8")
     auth_base64 = str(base64.b64encode(auth_bytes), "utf-8")
@@ -170,7 +175,9 @@ def get_auth_token(client_id, client_secret) -> str:
 
 
 def get_auth_header(token: str) -> dict:
-    """Takes in authorisation token and returns header for API calls"""
+    '''
+    Takes in authorisation token and returns header for API calls
+    '''
     return {"Authorization": "Bearer " + token}
 
 
@@ -197,34 +204,3 @@ def get_tiktok_tracks_api_info(songs: list[dict], headers: dict) -> list[dict]:
             #     print("Incorrect song found so disregarding")
             #     song["id"] = None
     return songs
-
-
-def handler():
-    '''
-    Main script logic
-    '''
-    START = datetime.now()
-    print("Fetching html from TikTok charts...")
-    soup = load_tiktok_html_soup(TIKTOK_BASE_URL)
-    print("Complete!")
-    print("Scraping data from TikTok html...")
-    songs = scrape_tiktok_soup(soup)
-    print("Complete!")
-    print("Matching tiktok songs to spotify counterparts...")
-    unmatched_tiktok_songs = match_tiktok_to_spotify(songs, [])
-    print("Complete!")
-
-    load_dotenv()
-    client_id = os.getenv("CLIENT_ID")
-    client_secret = os.getenv("CLIENT_SECRET")
-    token = get_auth_token(client_id, client_secret)
-    headers = get_auth_header(token)
-    print("Finding tiktok songs on spotify API")
-    tracks = get_tiktok_tracks_api_info(unmatched_tiktok_songs, headers)
-    # pprint(tracks[0])
-    END = datetime.now()
-    PROCESS = END - START
-    print(f"Run time: {PROCESS}")
-
-if __name__ == "__main__":
-    handler()

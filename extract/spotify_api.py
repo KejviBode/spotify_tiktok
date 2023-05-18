@@ -25,7 +25,9 @@ AUDIO_FEATURE_KEYS = ["danceability", "energy", "valence", "tempo", "speechiness
 
 
 def get_auth_token(client_id: str, client_secret: str) -> str:
-    """Gets an authorisation token from Spotify API"""
+    '''
+    Gets an authorisation token from Spotify API
+    '''
     auth_string = f"{client_id}:{client_secret}"
     auth_bytes = auth_string.encode("utf-8")
     auth_base64 = str(base64.b64encode(auth_bytes), "utf-8")
@@ -42,19 +44,25 @@ def get_auth_token(client_id: str, client_secret: str) -> str:
 
 
 def get_auth_header(token: str) -> dict:
-    """Takes in authorisation token and returns header for API calls"""
+    '''
+    Takes in authorisation token and returns header for API calls
+    '''
     return {"Authorization": "Bearer " + token}
 
 
 def get_spotify_top_50(top_50_uri: str, headers: dict) -> list[dict]:
-    """Takes playlist id and returns list of dictionaries of tracks in the playlist"""
+    '''
+    Takes playlist id and returns list of dictionaries of tracks in the playlist
+    '''
     result = get(f"{SPOTIFY_BASE_URL}playlists/{top_50_uri}/tracks", headers=headers, timeout=10)
     result = json.loads(result.content)
     return result["items"]
 
 
 def create_track_dicts(items: list[dict], headers) -> list[dict]:
-    """Takes in a list of playlist items and returns a list of dictionaries of each track"""
+    '''
+    Takes in a list of playlist items and returns a list of dictionaries of each track
+    '''
     tracks = []
     rank = 0
     for item in items:
@@ -88,7 +96,9 @@ def create_track_dicts(items: list[dict], headers) -> list[dict]:
 
 
 def get_artist_followers(artist_id: str, headers: dict) ->tuple:
-    """Takes an artist id and gets the popularity rating and follower count for that artist"""
+    '''
+    Takes an artist id and gets the popularity rating and follower count for that artist
+    '''
     result = get(f"{SPOTIFY_BASE_URL}artists/{artist_id}", headers=headers, timeout=10)
     result = json.loads(result.content)
     artist_followers = {}
@@ -99,7 +109,9 @@ def get_artist_followers(artist_id: str, headers: dict) ->tuple:
 
 
 def get_track_popularity(track_id: str, headers: dict) -> tuple:
-    """Takes a track id and gets the popularity rating of that track"""
+    '''
+    Takes a track id and gets the popularity rating of that track
+    '''
     result = get(f"{SPOTIFY_BASE_URL}tracks/{track_id}", headers=headers, timeout=10)
     result = json.loads(result.content)
     if "popularity" in result:
@@ -110,7 +122,9 @@ def get_track_popularity(track_id: str, headers: dict) -> tuple:
 
 
 def get_track_audio_features(track_id: str, headers: dict) -> tuple:
-    """Takes a track id and gets danceability, energy, valence, tempo, and speechiness scores"""
+    '''
+    Takes a track id and gets danceability, energy, valence, tempo, and speechiness scores
+    '''
     result = get(f"{SPOTIFY_BASE_URL}audio-features/{track_id}", headers=headers, timeout=10)
     result = json.loads(result.content)
     audio_features = {}
@@ -123,7 +137,9 @@ def get_track_audio_features(track_id: str, headers: dict) -> tuple:
 
 
 def get_db_connection():
-    """Connects to the database"""
+    '''
+    Connects to the database
+    '''
     try:
         conn = psycopg2.connect(
             user = os.getenv("DB_USER"),
@@ -140,7 +156,9 @@ def get_db_connection():
 
 
 def add_track_data(data: list[dict], conn) -> None:
-    """Takes in data on tracks and inserts track details into the track table"""
+    '''
+    Takes in data on tracks and inserts track details into the track table
+    '''
     for track in data:
         with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             sql_input = "INSERT INTO track (track_name, track_danceability, track_energy, \
@@ -156,7 +174,9 @@ def add_track_data(data: list[dict], conn) -> None:
 
 
 def add_artist_data(data: list, conn) -> None:
-    """Takes in data on tracks and inserts artist details into the artist table"""
+    '''
+    Takes in data on tracks and inserts artist details into the artist table
+    '''
     for track in data:
         for artist in track["artists"]:
             with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -172,7 +192,9 @@ def add_artist_data(data: list, conn) -> None:
 
 
 def add_genre(genre_name: str, conn) -> int:
-    """Takes in a genre name, adds to the database if not there, and returns genre id"""
+    '''
+    Takes in a genre name, adds to the database if not there, and returns genre id
+    '''
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute("INSERT INTO genre (genre_name) VALUES (%s) \
                         ON CONFLICT DO NOTHING", (genre_name,))
@@ -183,7 +205,9 @@ def add_genre(genre_name: str, conn) -> int:
 
 
 def add_artist_genre(genre_id: int, artist_id: int, conn):
-    """Takes in a genre id and artist id and adds them to the artist_genre table"""
+    '''
+    Takes in a genre id and artist id and adds them to the artist_genre table
+    '''
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_input = "INSERT INTO artist_genre (genre_id, artist_spotify_id)\
                     VALUES (%s, %s) ON CONFLICT DO NOTHING"
@@ -193,7 +217,9 @@ def add_artist_genre(genre_id: int, artist_id: int, conn):
 
 
 def add_track_artist(track_id: int, artist_id: int, conn):
-    """Takes in a track id and artist id and adds them to the track_artist table"""
+    '''
+    Takes in a track id and artist id and adds them to the track_artist table
+    '''
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_input = "INSERT INTO track_artist (track_spotify_id, artist_spotify_id)\
                     VALUES (%s, %s) ON CONFLICT DO NOTHING"
@@ -203,6 +229,10 @@ def add_track_artist(track_id: int, artist_id: int, conn):
 
 
 def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> list[dict]:
+    '''
+    Searches the spotify API for tiktok songs' audio features and adds them to
+    their respective dict
+    '''
     for track in unmatched_tiktok_songs:
         if "id" not in track.keys():
             print(f"Track is missing id and cannot be used to find audio features")
