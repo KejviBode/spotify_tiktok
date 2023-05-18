@@ -132,7 +132,7 @@ def get_db_connection():
         print("Error connecting to database.")
 
 
-def add_track_data(data: list[dict]) -> list[dict]:
+def add_track_data(data: list[dict], conn) -> list[dict]:
     """Takes in data on tracks and inserts track details into the track table"""
     for track in data:
         with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -150,7 +150,7 @@ def add_track_data(data: list[dict]) -> list[dict]:
     return data
 
 
-def add_artist_data(data: list):
+def add_artist_data(data: list, conn):
     """Takes in data on tracks and inserts artist details into the artist table"""
     for track in data:
         for artist in track["artists"]:
@@ -162,9 +162,9 @@ def add_artist_data(data: list):
                 conn.commit()
             add_artist_popularity_data(artist["id"], artist["popularity"], artist["follower_count"], conn)
             for genre in artist["genres"]:
-                genre_id = add_genre(genre)
-                add_artist_genre(genre_id, artist["id"])
-            add_track_artist(track["id"], artist["id"])
+                genre_id = add_genre(genre, conn)
+                add_artist_genre(genre_id, artist["id"], conn)
+            add_track_artist(track["id"], artist["id"], conn)
     return data
 
 
@@ -179,7 +179,7 @@ def add_artist_popularity_data(artist_id: str, popularity: int, follower_count: 
         conn.commit()
 
 
-def add_genre(genre_name: str) -> int:
+def add_genre(genre_name: str, conn) -> int:
     """Takes in a genre name, adds to the database if not there, and returns genre id"""
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute("INSERT INTO genre (genre_name) VALUES (%s) \
@@ -190,7 +190,7 @@ def add_genre(genre_name: str) -> int:
     return genre_id['genre_id']
 
 
-def add_artist_genre(genre_id: int, artist_id: int):
+def add_artist_genre(genre_id: int, artist_id: int, conn):
     """Takes in a genre id and artist id and adds them to the artist_genre table"""
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_input = "INSERT INTO artist_genre (genre_id, artist_spotify_id)\
@@ -210,7 +210,7 @@ def add_track_popularity(track_id: int, popularity: int, conn):
         conn.commit()
 
 
-def add_track_artist(track_id: int, artist_id: int):
+def add_track_artist(track_id: int, artist_id: int, conn):
     """Takes in a track id and artist id and adds them to the track_artist table"""
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_input = "INSERT INTO track_artist (track_spotify_id, artist_spotify_id)\
@@ -235,8 +235,8 @@ if __name__ == "__main__":
     print("Gathered top 50")
 
     conn = get_db_connection()
-    data_with_id = add_track_data(tracks)
+    data_with_id = add_track_data(tracks, conn)
     print("Added tracks")
-    data_with_artist_id = add_artist_data(data_with_id)
+    data_with_artist_id = add_artist_data(data_with_id, conn)
     print("Added artists")
     print("Success!")

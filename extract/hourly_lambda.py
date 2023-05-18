@@ -4,8 +4,20 @@ from dotenv import load_dotenv
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from spotify_api import get_db_connection, get_auth_token, get_auth_header, client_id, client_secret,\
+from spotify_api import get_db_connection, get_auth_token, get_auth_header,\
     get_artist_followers, get_track_popularity, add_artist_popularity_data, add_track_popularity
+
+
+def check_database_empty(conn) -> bool:
+    """Checks if the database is empty"""
+    with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        sql_query = "SELECT COUNT(*) FROM track"
+        cur.execute(sql_query)
+        result = cur.fetchone()
+        if result[0] == 0:
+            return True
+        else:
+            return False
 
 
 def get_column_values(table_name: str, column_name: str) -> list[int]:
@@ -45,23 +57,27 @@ def add_popularity_to_database(popularity_data: list[dict], type: str, conn):
 if __name__ == "__main__":
     load_dotenv()
     conn = get_db_connection()
-    client_id = os.getenv("CLIENT_ID")
-    client_secret = os.getenv("CLIENT_SECRET")
 
-    tracks = get_column_values("track", "track_spotify_id")
-    artists = get_column_values("artist", "artist_spotify_id")
+    if check_database_empty:
+        print("Tracks table currently empty")
+    else:
+        client_id = os.getenv("CLIENT_ID")
+        client_secret = os.getenv("CLIENT_SECRET")
 
-    token = get_auth_token(client_id, client_secret)
-    print("Connected to API")
+        tracks = get_column_values("track", "track_spotify_id")
+        artists = get_column_values("artist", "artist_spotify_id")
 
-    headers = get_auth_header(token)
+        token = get_auth_token(client_id, client_secret)
+        print("Connected to API")
 
-    track_popularity = get_all_popularity(tracks, headers, "track")
-    print("Collected track popularity")
-    artist_popularity = get_all_popularity(artists, headers, "artist")
-    print("Collected artist popularity")
+        headers = get_auth_header(token)
 
-    add_popularity_to_database(track_popularity, "track", conn)
-    print("Added track data to database")
-    add_popularity_to_database(artist_popularity, "artist", conn)
-    print("Added artist data to database")
+        track_popularity = get_all_popularity(tracks, headers, "track")
+        print("Collected track popularity")
+        artist_popularity = get_all_popularity(artists, headers, "artist")
+        print("Collected artist popularity")
+
+        add_popularity_to_database(track_popularity, "track", conn)
+        print("Added track data to database")
+        add_popularity_to_database(artist_popularity, "artist", conn)
+        print("Added artist data to database")
