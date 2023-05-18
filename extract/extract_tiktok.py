@@ -35,7 +35,7 @@ def load_tiktok_html_soup(url: str = TIKTOK_BASE_URL) -> BeautifulSoup:
     view_more_button = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CLASS_NAME, "button--Zmt5a")))
     view_more_button.click()
-    for i in range (10):
+    for i in range (100):
         try:
             view_more_button.click()
         except:
