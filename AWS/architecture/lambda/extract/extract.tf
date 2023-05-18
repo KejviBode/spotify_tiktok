@@ -105,6 +105,14 @@ variable "DB_PASSWORD" {
   type      = string
   sensitive = true
 }
+variable "ACCESS_KEY_ID" {
+  type      = string
+  sensitive = true
+}
+variable "SECRET_KEY_ID" {
+  type      = string
+  sensitive = true
+}
 
 #definitely change
 resource "aws_lambda_function" "extract" {
@@ -125,6 +133,8 @@ resource "aws_lambda_function" "extract" {
       DB_HOST     = var.DB_HOST
       DB_NAME     = var.DB_NAME
       DB_PASSWORD = var.DB_PASSWORD
+      ACCESS_KEY_ID = var.ACCESS_KEY_ID
+      SECRET_KEY_ID = var.SECRET_KEY_ID
     }
   }
 }

@@ -70,7 +70,7 @@ resource "aws_iam_role_policy_attachment" "function_logging_policy_attachment" {
 resource "aws_cloudwatch_event_rule" "store_daily_trigger" {
   name                = "spotify_tiktok_store_daily_trigger"
   description         = "Store old data in CSV"
-  schedule_expression = "cron(50 11 * * ? *)"
+  schedule_expression = "cron(50 23 * * ? *)"
 }
 
 # link trigger to lambda
@@ -105,6 +105,14 @@ variable "DB_PASSWORD" {
   type      = string
   sensitive = true
 }
+variable "ACCESS_KEY_ID" {
+  type      = string
+  sensitive = true
+}
+variable "SECRET_KEY_ID" {
+  type      = string
+  sensitive = true
+}
 
 #definitely change
 resource "aws_lambda_function" "spotify-tiktok-storage" {
@@ -124,6 +132,8 @@ resource "aws_lambda_function" "spotify-tiktok-storage" {
       DB_HOST     = var.DB_HOST
       DB_NAME     = var.DB_NAME
       DB_PASSWORD = var.DB_PASSWORD
+      ACCESS_KEY_ID = var.ACCESS_KEY_ID
+      SECRET_KEY_ID = var.SECRET_KEY_ID
     }
   }
 }

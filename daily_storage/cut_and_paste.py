@@ -45,7 +45,7 @@ def cut_old_data_from_sql(conn: connection, table_name: str) -> dict[list[tuple]
     }
 
 
-def put_table_in_csv(fs: S3FileSystem, all_data: dict[dict[list[str], list[tuple]]], bucket: str = BUCKET):
+def put_table_in_csv(fs: S3FileSystem, all_data: dict[dict[list[str], list[tuple]]], bucket: str = BUCKET) -> dict:
     """
     Creates a csv file with the necessary columns and rows using the s3fs S3FileSystem
     """
