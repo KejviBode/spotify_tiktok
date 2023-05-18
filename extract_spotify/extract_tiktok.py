@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from rapidfuzz import fuzz
 from rapidfuzz.distance import Levenshtein
 from datetime import datetime
+from pprint import pprint
 
 from dotenv import load_dotenv
 from requests import post, get
@@ -16,11 +17,11 @@ import base64
 
 TIKTOK_BASE_URL = "https://ads.tiktok.com/business/creativecenter/inspiration/popular/music/pad/en"
 TIKTOK_COOKIE = {"name": "cookie-consent", "value": "{%22ga%22:true%2C%22af%22:true%2C%22fbp%22:true%2C%22lip%22:true%2C%22bing%22:true%2C%22ttads%22:true%2C%22reddit%22:true%2C%22criteo%22:true%2C%22version%22:%22v9%22}"}
-ARBITRATY_LIST = [{"name":"Funny son"}, {"name":"Crack Rock"}, {"name":"gobbledeegook"}, {"name":"ghost"}]
+ARBITRARY_LIST = [{"name":"Funny son"}, {"name":"Crack Rock"}, {"name":"gobbledeegook"}, {"name":"ghost"}]
 SPOTIFY_BASE_URL = "http://api.spotify.com/v1/"
 
 
-def load_tiktok_html_soup(url: str) -> BeautifulSoup:
+def load_tiktok_html_soup(url: str = TIKTOK_BASE_URL) -> BeautifulSoup:
     '''
     Loads the TikTok charts page, making it scrapeable using selenium
     and returns a Beautiful Soup object
@@ -33,7 +34,7 @@ def load_tiktok_html_soup(url: str) -> BeautifulSoup:
     view_more_button = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.CLASS_NAME, "button--Zmt5a")))
     view_more_button.click()
-    for i in range (10):
+    for i in range (20):
         try:
             view_more_button.click()
         except:
@@ -58,7 +59,8 @@ def scrape_tiktok_soup(soup: BeautifulSoup) -> list[dict]:
         song_name = song.find("span",{"class":"music-name--Z2hNc music-name--G2iqZ"}).contents[0]
         song_artists = song.find("span", {"class":"auther-name--3HglG auther-name--cXfro"}).contents[0].split("&")
         song_info["song_name"] = song_name.replace("#","")
-        song_info["song_rank"] = song_rank
+        song_info["tiktok_rank"] = song_rank
+        song_info["spotify_rank"] = None
         song_info["artists"] = song_artists
         song_info["in_tiktok"] = True
         song_info["in_spotify"] = False
@@ -78,7 +80,7 @@ def match_tiktok_to_spotify(tiktok_tracks: list[dict], spotify_tracks: list[dict
                 (fuzz.ratio(tiktok_track["song_name"].lower(), spotify_track["name"].lower())) > 90:
                 tiktok_track["in_spotify"] = True
                 spotify_track["in_tiktok"] = True
-                spotify_track["tiktok_rank"] = tiktok_track["song_rank"]
+                spotify_track["tiktok_rank"] = tiktok_track["tiktok_rank"]
                 break
         if tiktok_track["in_spotify"] is False:
             tiktok_not_on_spotify_chart.append(tiktok_track)
@@ -89,12 +91,14 @@ def search_api_track(track_name: str, artist_names: list[str], headers):
     '''
     Searches the spotify API using a tiktok song name and artists' names
     '''
-    query_url = f"{SPOTIFY_BASE_URL}search/?q=track:{track_name}&artists:{','.join(artist_names)}&type=track&limit=1"
+    query_url = f"{SPOTIFY_BASE_URL}search/?q=track:{track_name} artist:{','.join(artist_names)}&type=track&limit=1"
+    print(query_url)
     result = get(query_url, headers=headers)
     try:
         json_result = json.loads(result.content)["tracks"]["items"]
     except:
         json_result = json.loads(result.content)
+    print(json_result)
     return json_result
 
 
@@ -125,15 +129,27 @@ def get_tiktok_tracks_api_info(songs: list[dict], headers: dict) -> list[dict]:
     Iterates through a list of unmatched tiktok songs and finds the track
     information on the spotify API
     '''
-    identified_tracks = []
     for song in songs:
         track = search_api_track(song["song_name"], song["artists"], headers)
+        # print(track)
+        if len(track) == 0:
+            print(f"Error obtaining track information for {song['song_name']}")
+            continue
         if "error" in track[0].keys():
             print(f"Error on song: {song['song_name']} with artists: {','.join(song['artists'])}")
             print(track)
             continue
-        identified_tracks.append(track)
-    return identified_tracks
+        print(track[0]["artists"])
+        song["id"] = track[0]["id"]
+        song["popularity"] = track[0]["popularity"]
+        # song["artists"] = []
+        song["db_artists"] = []
+        for artist in track[0]["artists"]:
+            track_artist = {}
+            track_artist["name"] = artist["name"]
+            track_artist["id"] = artist["id"]
+            song["db_artists"].append(track_artist)
+    return songs
 
 
 def handler():
@@ -148,7 +164,7 @@ def handler():
     songs = scrape_tiktok_soup(soup)
     print("Complete!")
     print("Matching tiktok songs to spotify counterparts...")
-    unmatched_tiktok_songs = match_tiktok_to_spotify(songs, ARBITRATY_LIST)
+    unmatched_tiktok_songs = match_tiktok_to_spotify(songs, [])
     print("Complete!")
 
     load_dotenv()
@@ -156,8 +172,8 @@ def handler():
     client_secret = os.getenv("CLIENT_SECRET")
     token = get_auth_token(client_id, client_secret)
     headers = get_auth_header(token)
-    get_tiktok_tracks_api_info(unmatched_tiktok_songs, headers)
-
+    tracks = get_tiktok_tracks_api_info(unmatched_tiktok_songs, headers)
+    pprint(tracks[0])
     END = datetime.now()
     PROCESS = END - START
     print(f"Run time: {PROCESS}")

@@ -2,3 +2,5 @@ venv
 .env
 test
 .vscode
+sns_lambda
+geckodriver.log

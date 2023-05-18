@@ -7,6 +7,12 @@ from dotenv import load_dotenv
 from requests import post, get
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from datetime import datetime
+
+from extract_tiktok import load_tiktok_html_soup, \
+                            scrape_tiktok_soup, \
+                            match_tiktok_to_spotify, \
+                            get_tiktok_tracks_api_info
 
 
 BUCKET_NAME = "c7-spotify-tiktok-output"
@@ -14,9 +20,11 @@ SPOTIFY_BASE_URL = "http://api.spotify.com/v1/"
 TOP_50_PLAYLIST_ID = "37i9dQZEVXbMDoHDwVN2tF"
 TRACK_FILENAME = 'track_ids.csv'
 ARTIST_FILENAME = 'artist_ids.csv'
+TIKTOK_BASE_URL = "https://ads.tiktok.com/business/creativecenter/inspiration/popular/music/pad/en"
+TIKTOK_COOKIE = {"name": "cookie-consent", "value": "{%22ga%22:true%2C%22af%22:true%2C%22fbp%22:true%2C%22lip%22:true%2C%22bing%22:true%2C%22ttads%22:true%2C%22reddit%22:true%2C%22criteo%22:true%2C%22version%22:%22v9%22}"}
 
 
-def get_auth_token() -> str:
+def get_auth_token(client_id: str, client_secret: str) -> str:
     """Gets an authorisation token from Spotify API"""
     auth_string = f"{client_id}:{client_secret}"
     auth_bytes = auth_string.encode("utf-8")
@@ -132,7 +140,7 @@ def get_db_connection():
         print("Error connecting to database.")
 
 
-def add_track_data(data: list[dict]) -> list[dict]:
+def add_track_data(data: list[dict], conn) -> list[dict]:
     """Takes in data on tracks and inserts track details into the track table"""
     for track in data:
         with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -150,7 +158,7 @@ def add_track_data(data: list[dict]) -> list[dict]:
     return data
 
 
-def add_artist_data(data: list):
+def add_artist_data(data: list, conn):
     """Takes in data on tracks and inserts artist details into the artist table"""
     for track in data:
         for artist in track["artists"]:
@@ -220,22 +228,61 @@ def add_track_artist(track_id: int, artist_id: int):
         conn.commit()
 
 
-if __name__ == "__main__":
-    load_dotenv()
+def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> list[dict]:
+    for track in unmatched_tiktok_songs:
+        if "id" not in track.keys():
+            print("Track has no id and cannot be searched")
+            continue
+        audio_features = get_track_audio_features(track["id"], headers)
+        track["danceability"] = audio_features["danceability"]
+        track["energy"] = audio_features["energy"]
+        track["valence"] = audio_features["valence"]
+        track["tempo"] = audio_features["tempo"]
+        track["speechiness"] = audio_features["speechiness"]
+        for artist in track["db_artists"]:
+            artist_followers = get_artist_followers(artist["id"], headers)
+            artist["popularity"] = artist_followers["popularity"]
+            artist["follower_count"] = artist_followers["follower_count"]
+            artist["genres"] = artist_followers["genres"]
+    return unmatched_tiktok_songs
 
+
+if __name__ == "__main__":
+    START = datetime.now()
+    load_dotenv()
     client_id = os.getenv("CLIENT_ID")
     client_secret = os.getenv("CLIENT_SECRET")
-    token = get_auth_token()
+    token = get_auth_token(client_id, client_secret)
     print("Connected to API")
 
     headers = get_auth_header(token)
     result = get_spotify_top_50(TOP_50_PLAYLIST_ID, headers)
-    tracks = create_track_dicts(result)
+    spotify_tracks = create_track_dicts(result)
     print("Gathered top 50")
 
+
+    ### Write tiktok code here
+    print("Fetching html from TikTok charts...")
+    soup = load_tiktok_html_soup(TIKTOK_BASE_URL)
+    print("Complete!")
+    print("Scraping data from TikTok html...")
+    tiktok_songs = scrape_tiktok_soup(soup)
+    print("Complete!")
+    print("Matching tiktok songs to spotify counterparts...")
+    unmatched_tiktok_songs = match_tiktok_to_spotify(tiktok_songs, spotify_tracks)
+    print("Complete!")
+    get_tiktok_tracks_api_info(unmatched_tiktok_songs, headers)
+    get_tiktok_attributes(unmatched_tiktok_songs, headers)
+
+
+
     conn = get_db_connection()
-    data_with_id = add_track_data(tracks)
-    print("Added tracks")
-    data_with_artist_id = add_artist_data(data_with_id)
-    print("Added artists")
+    print("Adding spotify tracks")
+    data_with_id = add_track_data(spotify_tracks, conn)
+    print("Added spotify tracks")
+    print("Adding spotify artists")
+    data_with_artist_id = add_artist_data(data_with_id, conn)
+    print("Added spotify artists")
+    add_track_data(unmatched_tiktok_songs)
+    add_artist_data(unmatched_tiktok_songs)
     print("Success!")
