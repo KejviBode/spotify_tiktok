@@ -6,8 +6,8 @@ RUN yum update -y \
 RUN yum install xz atk cups-libs gtk3 libXcomposite alsa-lib \
     libXcursor libXdamage libXext libXi libXrandr libXScrnSaver \
     libXtst pango at-spi2-atk libXt xorg-x11-server-Xvfb \
-    xorg-x11-xauth dbus-glib dbus-glib-devel -y -q \
-    RUN rm -rf /var/cache/yum
+    xorg-x11-xauth dbus-glib dbus-glib-devel -y -q 
+RUN rm -rf /var/cache/yum
 COPY install-browsers.sh .
 RUN bash install-browsers.sh
 COPY requirements.txt .
