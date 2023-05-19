@@ -205,8 +205,11 @@ resource "aws_sfn_state_machine" "sfn_state_machine" {
         "Type": "Task",
         "Resource": "arn:aws:states:::sns:publish",
         "Parameters": {
-          "Message.$": "$",
-          "TopicArn": "${aws_sns_topic.topic.arn}"
+          "TopicArn": "${aws_sns_topic.topic.arn}",
+          "Message": {
+            "works": "Yes",
+            "message.$": "$"
+          }
         },
         "End": true
       }

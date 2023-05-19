@@ -84,6 +84,8 @@ def handler(event=None, context=None):
                       for all_data in table_data]
         if len(add_to_csv) == 7:
             print("All tables added to S3")
+        else:
+            print("Failure to upload all tables")
 
         return {
             'status_code': 200,

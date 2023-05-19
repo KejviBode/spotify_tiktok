@@ -2,4 +2,3 @@ s3fs
 psycopg2-binary
 datetime
 python-dotenv
-rich
