@@ -8,9 +8,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
 
-from extract_tiktok import load_tiktok_html_soup, \
-                            scrape_tiktok_soup, \
-                            match_tiktok_to_spotify, \
+from extract_tiktok import match_tiktok_to_spotify, \
                             get_tiktok_tracks_api_info, \
                             search_multiple_tok_pages
 
@@ -24,6 +22,7 @@ TIKTOK_BASE_URL = "https://ads.tiktok.com/business/creativecenter/inspiration/po
 TIKTOK_COOKIE = {"name": "cookie-consent", "value": "{%22ga%22:true%2C%22af%22:true%2C%22fbp%22:true%2C%22lip%22:true%2C%22bing%22:true%2C%22ttads%22:true%2C%22reddit%22:true%2C%22criteo%22:true%2C%22version%22:%22v9%22}"}
 AUDIO_FEATURE_KEYS = ["danceability", "energy", "valence", "tempo", "speechiness"]
 TOKCHARTS_BASE_URL = "https://tokchart.com/?page="
+EVENT_KEYS = ["old_tracks", "old_artists"]
 
 
 def get_auth_token(client_id: str, client_secret: str) -> str:
@@ -243,7 +242,10 @@ def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> 
             track["speechiness"] = audio_features["speechiness"]
             for artist in track["artists"]:
                 artist_followers = get_artist_genres(artist["id"], headers)
-                artist["genres"] = artist_followers["genres"]
+                if "genres" not in artist_followers.keys():
+                    continue
+                else:
+                    artist["genres"] = artist_followers["genres"]
     return unmatched_tiktok_songs
 
 
@@ -276,7 +278,7 @@ def match_old_tracks_and_artists(old_tracks: dict, old_artists, new_tracks: list
     return new_to_track_charts, new_to_artists_charts
 
 
-def handler(event=None, context=None, callback=None):
+def handler(event=None, context=None):
     START = datetime.now()
     try:
         load_dotenv()
@@ -313,7 +315,11 @@ def handler(event=None, context=None, callback=None):
         print("Complete!\n")
         spotify_tracks.extend(unmatched_tiktok_songs)
         print("Success!")
-        new_tracks, new_artists = match_old_tracks_and_artists(event["old_tracks"], event["old_artists"], spotify_tracks)
+        print(event)
+        if isinstance(event, dict):
+            new_tracks, new_artists = match_old_tracks_and_artists(event["old_tracks"], event["old_artists"], spotify_tracks)
+        else:
+            new_tracks, new_artists = "Couldn't find old tracks and artists :(", "Couldn't find old tracks and artists :("
         END = datetime.now()
         PROCESS = END - START
         print(f"Run time: {PROCESS}")
