@@ -160,34 +160,61 @@ resource "aws_lambda_function" "spotify-tiktok-storage" {
   }
 }
 
+# sns topic stuff
+resource "aws_sns_topic" "topic" {
+  name = "spotify-tiktok-tracks-remained-in-top-100"
+}
+
+resource "aws_sns_topic_subscription" "ilyas-target" {
+  topic_arn = aws_sns_topic.topic.arn
+  protocol  = "email"
+  endpoint  = "trainee.ilyas.abdulkadir@sigmalabs.ac.uk"
+}
+resource "aws_sns_topic_subscription" "kejve-target" {
+  topic_arn = aws_sns_topic.topic.arn
+  protocol  = "email"
+  endpoint  = "trainee.kejve.boder@sigmalabs.ac.uk"
+}
+resource "aws_sns_topic_subscription" "selvy-target" {
+  topic_arn = aws_sns_topic.topic.arn
+  protocol  = "email"
+  endpoint  = "trainee.selvy.yasotharan@sigmalabs.ac.uk"
+}
+
 # step-function stuff
 resource "aws_sfn_state_machine" "sfn_state_machine" {
   name     = var.step_function_name
   role_arn = aws_iam_role.step_function_role.arn
 
   definition = <<EOF
-    {
-      "Comment": "Invoke AWS Lambda from AWS Step Functions with Terraform",
-      "StartAt": "Store",
-      "States": {
-        "Store": {
-          "Type": "Task",
-          "Resource": "${aws_lambda_function.spotify-tiktok-storage.arn}",
-          "OutputPath": "$.message",
-          "ResultPath": "$.output",
-          "Next": "Extract"
+  {
+    "Comment": "Invoke AWS Lambda from AWS Step Functions with Terraform",
+    "StartAt": "Store",
+    "States": {
+      "Store": {
+        "Type": "Task",
+        "Resource": "${aws_lambda_function.spotify-tiktok-storage.arn}",
+        "Next": "Extract"
+      },
+      "Extract": {
+        "Type": "Task",
+        "Resource": "${aws_lambda_function.spotify-tiktok-extract.arn}",
+        "Next": "SNS Publish"
+      },
+      "SNS Publish": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "Message.$": "$",
+          "TopicArn": "${aws_sns_topic.topic.arn}"
         },
-        "Extract": {
-          "Type": "Task",
-          "Resource": "${aws_lambda_function.spotify-tiktok-extract.arn}",
-          "InputPath": "$.output",
-          "ResultPath": "$.output",
-          "End": true
-        }
+        "End": true
       }
     }
+  }
   EOF
 }
+
 
 # Creating iam role to run lambda function
 resource "aws_iam_role" "step_function_role" {
@@ -235,7 +262,7 @@ resource "aws_iam_role_policy" "step_function_policy" {
 # Scheduling step function
 resource "aws_cloudwatch_event_rule" "step_function_schedule" {
   name                = "spotify-daily-step-function"
-  description         = "Run step function at 6 PM everyday"
+  description         = "Run step function at 23:55 everyday"
   schedule_expression = "cron(55 23 * * ? *)"
 }
 
