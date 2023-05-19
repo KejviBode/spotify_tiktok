@@ -160,17 +160,21 @@ def add_track_data(data: list[dict], conn) -> None:
     Takes in data on tracks and inserts track details into the track table
     '''
     for track in data:
-        with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-            sql_input = "INSERT INTO track (track_name, track_danceability, track_energy, \
-                track_valence, track_tempo, track_speechiness, in_spotify, in_tiktok, \
-                    tiktok_rank, spotify_rank, track_spotify_id)\
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING"
-            vals = [track["name"], track["danceability"], track["energy"], track["valence"], \
-                    track["tempo"], track["speechiness"], track["in_spotify"], \
-                    track["in_tiktok"], track["tiktok_rank"], \
-                    track["spotify_rank"], track["id"]]
-            cur.execute(sql_input, vals)
-            conn.commit()
+        try:
+            with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+                sql_input = "INSERT INTO track (track_name, track_danceability, track_energy, \
+                    track_valence, track_tempo, track_speechiness, in_spotify, in_tiktok, \
+                        tiktok_rank, spotify_rank, track_spotify_id)\
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING"
+                vals = [track["name"], track["danceability"], track["energy"], track["valence"], \
+                        track["tempo"], track["speechiness"], track["in_spotify"], \
+                        track["in_tiktok"], track["tiktok_rank"], \
+                        track["spotify_rank"], track["id"]]
+                cur.execute(sql_input, vals)
+                conn.commit()
+        except Exception as err:
+            print(f"Error for song {track['name']} when trying to insert into database\
+                  with error: {err.args}")
 
 
 def add_artist_data(data: list, conn) -> None:
@@ -178,18 +182,23 @@ def add_artist_data(data: list, conn) -> None:
     Takes in data on tracks and inserts artist details into the artist table
     '''
     for track in data:
-        for artist in track["artists"]:
-            with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-                sql_input = "INSERT INTO artist (spotify_name, artist_spotify_id)\
-                    VALUES (%s, %s) ON CONFLICT DO NOTHING"
-                vals = [artist["name"], artist["id"]]
-                cur.execute(sql_input, vals)
-                conn.commit()
+        try:
+            for artist in track["artists"]:
+                with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    sql_input = "INSERT INTO artist (spotify_name, artist_spotify_id)\
+                        VALUES (%s, %s) ON CONFLICT DO NOTHING"
+                    vals = [artist["name"], artist["id"]]
+                    cur.execute(sql_input, vals)
+                    conn.commit()
 
-            for genre in artist["genres"]:
-                genre_id = add_genre(genre, conn)
-                add_artist_genre(genre_id, artist["id"], conn)
-            add_track_artist(track["id"], artist["id"], conn)
+                for genre in artist["genres"]:
+                    genre_id = add_genre(genre, conn)
+                    add_artist_genre(genre_id, artist["id"], conn)
+                add_track_artist(track["id"], artist["id"], conn)
+        except Exception as err:
+            print(f"Error for artists in {track['name']} when trying to insert into database\
+                  with error: {err.args}")
+
 
             
 def add_genre(genre_name: str, conn) -> int:
@@ -237,12 +246,12 @@ def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> 
     '''
     for track in unmatched_tiktok_songs:
         if "id" not in track.keys():
-            print(f"Track is missing id and cannot be used to find audio features")
+            print(f"Track {track['name']} is missing id and cannot be used to find audio features")
         else:
             audio_features = get_track_audio_features(track["id"], headers)
             for key in AUDIO_FEATURE_KEYS:
                 if key not in audio_features.keys():
-                    print(f"Track is missing key: {key} and cannot be used")
+                    print(f"Track {track['name']} is missing key: {key} and cannot be used")
             track["danceability"] = audio_features["danceability"]
             track["energy"] = audio_features["energy"]
             track["valence"] = audio_features["valence"]
@@ -256,53 +265,62 @@ def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> 
     return unmatched_tiktok_songs
 
 
-def handler(event=None, context=None):
+def handler(event=None, context=None, callback=None):
     START = datetime.now()
-    load_dotenv()
-    client_id = os.getenv("CLIENT_ID")
-    client_secret = os.getenv("CLIENT_SECRET")
+    try:
+        load_dotenv()
+        client_id = os.getenv("CLIENT_ID")
+        client_secret = os.getenv("CLIENT_SECRET")
+        token = get_auth_token(client_id, client_secret)
+        print("Connected to API")
+        headers = get_auth_header(token)
+        print("Gathering top 50")
+        result = get_spotify_top_50(TOP_50_PLAYLIST_ID, headers)
+        spotify_tracks = create_track_dicts(result, headers)
+        print("Complete!\n")
+        print("Fetching html from TikTok charts...")
+        soup = load_tiktok_html_soup(TIKTOK_BASE_URL)
+        print("Complete!\n")
+        print("Scraping data from TikTok html...")
+        tiktok_songs = scrape_tiktok_soup(soup)
+        print("Complete!\n")
+        print("Matching tiktok songs to spotify counterparts...")
+        unmatched_tiktok_songs = match_tiktok_to_spotify(tiktok_songs, spotify_tracks)
+        print("Complete!\n")
+        print("Gathering tiktok attributes from spotify api")
+        get_tiktok_tracks_api_info(unmatched_tiktok_songs, headers)
+        get_tiktok_attributes(unmatched_tiktok_songs, headers)
+        print("Complete!\n")
 
-    token = get_auth_token(client_id, client_secret)
-    print("Connected to API")
+        conn = get_db_connection()
 
-    headers = get_auth_header(token)
-    print("Gathering top 50")
-    result = get_spotify_top_50(TOP_50_PLAYLIST_ID, headers)
-    spotify_tracks = create_track_dicts(result, headers)
-    print("Complete!\n")
-    print("Fetching html from TikTok charts...")
-    soup = load_tiktok_html_soup(TIKTOK_BASE_URL)
-    print("Complete!\n")
-    print("Scraping data from TikTok html...")
-    tiktok_songs = scrape_tiktok_soup(soup)
-    print("Complete!\n")
-    print("Matching tiktok songs to spotify counterparts...")
-    unmatched_tiktok_songs = match_tiktok_to_spotify(tiktok_songs, spotify_tracks)
-    print("Complete!\n")
-    print("Gathering tiktok attributes from spotify api")
-    get_tiktok_tracks_api_info(unmatched_tiktok_songs, headers)
-    get_tiktok_attributes(unmatched_tiktok_songs, headers)
-    print("Complete!\n")
+        print("Adding spotify tracks")
+        add_track_data(spotify_tracks, conn)
+        print("Complete!\n")
+        print("Adding spotify artists")
+        add_artist_data(spotify_tracks, conn)
+        print("Complete!\n")
+        print("Adding tiktok songs")
+        add_track_data(unmatched_tiktok_songs, conn)
+        print("Complete!\n")
+        print("Adding tiktok artists")
+        add_artist_data(unmatched_tiktok_songs, conn)
+        print("Complete!\n")
+        print("Success!")
+        END = datetime.now()
+        PROCESS = END - START
+        print(f"Run time: {PROCESS}")
+        return {"status_code": 200,
+                "message": "Success!"}
+    except Exception as err:
+        END = datetime.now()
+        PROCESS = END - START
+        print(f"Run time: {PROCESS}")
+        print({"status_code": 400,
+                "message": err.args})
+        return {"status_code": 400,
+                "message": err.args}
 
-    conn = get_db_connection()
-
-    print("Adding spotify tracks")
-    add_track_data(spotify_tracks, conn)
-    print("Complete!\n")
-    print("Adding spotify artists")
-    add_artist_data(spotify_tracks, conn)
-    print("Complete!\n")
-    print("Adding tiktok songs")
-    add_track_data(unmatched_tiktok_songs, conn)
-    print("Complete!\n")
-    print("Adding tiktok artists")
-    add_artist_data(unmatched_tiktok_songs, conn)
-    print("Complete!\n")
-
-    print("Success!")
-    END = datetime.now()
-    PROCESS = END - START
-    print(f"Run time: {PROCESS}")
 
 if __name__ == "__main__":
     handler()
