@@ -11,7 +11,8 @@ from datetime import datetime
 from extract_tiktok import load_tiktok_html_soup, \
                             scrape_tiktok_soup, \
                             match_tiktok_to_spotify, \
-                            get_tiktok_tracks_api_info
+                            get_tiktok_tracks_api_info, \
+                            search_multiple_tok_pages
 
 
 BUCKET_NAME = "c7-spotify-tiktok-output"
@@ -22,6 +23,7 @@ ARTIST_FILENAME = 'artist_ids.csv'
 TIKTOK_BASE_URL = "https://ads.tiktok.com/business/creativecenter/inspiration/popular/music/pad/en"
 TIKTOK_COOKIE = {"name": "cookie-consent", "value": "{%22ga%22:true%2C%22af%22:true%2C%22fbp%22:true%2C%22lip%22:true%2C%22bing%22:true%2C%22ttads%22:true%2C%22reddit%22:true%2C%22criteo%22:true%2C%22version%22:%22v9%22}"}
 AUDIO_FEATURE_KEYS = ["danceability", "energy", "valence", "tempo", "speechiness"]
+TOKCHARTS_BASE_URL = "https://tokchart.com/?page="
 
 
 def get_auth_token(client_id: str, client_secret: str) -> str:
@@ -86,39 +88,22 @@ def create_track_dicts(items: list[dict], headers) -> list[dict]:
             artist_dict = {}
             artist_dict["id"] = artist["id"]
             artist_dict["name"] = artist["name"]
-            artist_followers = get_artist_followers(artist["id"], headers)
-            artist_dict["popularity"] = artist_followers["popularity"]
-            artist_dict["follower_count"] = artist_followers["follower_count"]
+            artist_followers = get_artist_genres(artist["id"], headers)
             artist_dict["genres"] = artist_followers["genres"]
             track["artists"].append(artist_dict)
         tracks.append(track)
     return tracks
 
 
-def get_artist_followers(artist_id: str, headers: dict) ->tuple:
+def get_artist_genres(artist_id: str, headers: dict) ->tuple:
     '''
     Takes an artist id and gets the popularity rating and follower count for that artist
     '''
     result = get(f"{SPOTIFY_BASE_URL}artists/{artist_id}", headers=headers, timeout=10)
     result = json.loads(result.content)
     artist_followers = {}
-    artist_followers["popularity"] = result["popularity"]
-    artist_followers["follower_count"] = result["followers"]["total"]
     artist_followers["genres"] = result["genres"]
     return artist_followers
-
-
-def get_track_popularity(track_id: str, headers: dict) -> tuple:
-    '''
-    Takes a track id and gets the popularity rating of that track
-    '''
-    result = get(f"{SPOTIFY_BASE_URL}tracks/{track_id}", headers=headers, timeout=10)
-    result = json.loads(result.content)
-    if "popularity" in result:
-        popularity = result["popularity"]
-    else:
-        popularity = None
-    return popularity
 
 
 def get_track_audio_features(track_id: str, headers: dict) -> tuple:
@@ -173,7 +158,7 @@ def add_track_data(data: list[dict], conn) -> None:
                 cur.execute(sql_input, vals)
                 conn.commit()
         except Exception as err:
-            print(f"Error for song {track['name']} when trying to insert into database\
+            print(f"Error for song '{track['name']}' when trying to insert into database\
                   with error: {err.args}")
 
 
@@ -196,9 +181,8 @@ def add_artist_data(data: list, conn) -> None:
                     add_artist_genre(genre_id, artist["id"], conn)
                 add_track_artist(track["id"], artist["id"], conn)
         except Exception as err:
-            print(f"Error for artists in {track['name']} when trying to insert into database\
+            print(f"Error for artists in '{track['name']}' when trying to insert into database\
                   with error: {err.args}")
-
 
             
 def add_genre(genre_name: str, conn) -> int:
@@ -246,23 +230,50 @@ def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> 
     '''
     for track in unmatched_tiktok_songs:
         if "id" not in track.keys():
-            print(f"Track {track['name']} is missing id and cannot be used to find audio features")
+            print(f"Track '{track['name']}'is missing id and cannot be used to find audio features")
         else:
             audio_features = get_track_audio_features(track["id"], headers)
             for key in AUDIO_FEATURE_KEYS:
                 if key not in audio_features.keys():
-                    print(f"Track {track['name']} is missing key: {key} and cannot be used")
+                    print(f"Track '{track['name']}' is missing key: {key} and cannot be used")
             track["danceability"] = audio_features["danceability"]
             track["energy"] = audio_features["energy"]
             track["valence"] = audio_features["valence"]
             track["tempo"] = audio_features["tempo"]
             track["speechiness"] = audio_features["speechiness"]
             for artist in track["artists"]:
-                artist_followers = get_artist_followers(artist["id"], headers)
-                artist["popularity"] = artist_followers["popularity"]
-                artist["follower_count"] = artist_followers["follower_count"]
+                artist_followers = get_artist_genres(artist["id"], headers)
                 artist["genres"] = artist_followers["genres"]
     return unmatched_tiktok_songs
+
+
+def get_all_track_names(tracks: list[dict]) -> list:
+    '''
+    Returns a list of all tracks and artists to be added to database
+    '''
+    return [[track['name'], track["artists"]] for track in tracks if "id" in track.keys()]
+
+
+def match_old_tracks_and_artists(old_tracks: dict, old_artists, new_tracks: list[list]) -> list:
+    if old_tracks is None or old_artists is None:
+        return "Couldn't find old tracks and artists :("
+    new_to_track_charts = []
+    new_to_artists_charts = []
+    for new_track in new_tracks:
+        track_counter = 0
+        for old_track in old_tracks:
+            if new_track["name"] == old_track[0]:
+                track_counter += 1
+        if counter == 0:
+            new_to_track_charts.append(f"New track in the database: {new_track['name']}")
+        for new_artist in new_track["artists"]:
+            artist_counter = 0
+            for old_artist in old_artists:
+                if new_artist == old_artist:
+                    counter += 1
+            if artist_counter == 0:
+                new_to_artists_charts.append(f"New artist in the database: {new_artist}")
+    return new_to_track_charts, new_to_artists_charts
 
 
 def handler(event=None, context=None, callback=None):
@@ -279,11 +290,7 @@ def handler(event=None, context=None, callback=None):
         spotify_tracks = create_track_dicts(result, headers)
         print("Complete!\n")
         print("Fetching html from TikTok charts...")
-        soup = load_tiktok_html_soup(TIKTOK_BASE_URL)
-        print("Complete!\n")
-        print("Scraping data from TikTok html...")
-        tiktok_songs = scrape_tiktok_soup(soup)
-        print("Complete!\n")
+        tiktok_songs = search_multiple_tok_pages(TOKCHARTS_BASE_URL)
         print("Matching tiktok songs to spotify counterparts...")
         unmatched_tiktok_songs = match_tiktok_to_spotify(tiktok_songs, spotify_tracks)
         print("Complete!\n")
@@ -291,9 +298,7 @@ def handler(event=None, context=None, callback=None):
         get_tiktok_tracks_api_info(unmatched_tiktok_songs, headers)
         get_tiktok_attributes(unmatched_tiktok_songs, headers)
         print("Complete!\n")
-
         conn = get_db_connection()
-
         print("Adding spotify tracks")
         add_track_data(spotify_tracks, conn)
         print("Complete!\n")
@@ -306,12 +311,16 @@ def handler(event=None, context=None, callback=None):
         print("Adding tiktok artists")
         add_artist_data(unmatched_tiktok_songs, conn)
         print("Complete!\n")
+        spotify_tracks.extend(unmatched_tiktok_songs)
         print("Success!")
+        new_tracks, new_artists = match_old_tracks_and_artists(event["old_tracks"], event["old_artists"], spotify_tracks)
         END = datetime.now()
         PROCESS = END - START
         print(f"Run time: {PROCESS}")
         return {"status_code": 200,
-                "message": "Success!"}
+                "message": "Success!",
+                "comparison_tracks": new_tracks,
+                "comparison_artists":new_artists}
     except Exception as err:
         END = datetime.now()
         PROCESS = END - START
