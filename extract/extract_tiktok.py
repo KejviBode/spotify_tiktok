@@ -106,12 +106,15 @@ def get_tokchart_relevant_div(tok_soup: BeautifulSoup) -> list[dict]:
     for song in soup_div:
         song_info = {}
         song_name = song.find("h4").find("a").contents[0].strip()
-        ## This 
+        ## This try and except block is here because sometimes the formatting of the css is different
+        ## and so the identifier also changes
         try:
             song_rank = song.find("div", {"class": "font-bold sm:font-extrabold text-lg sm:text-2xl"}).contents[0].strip()
-            song_artists = song.find("span", {"class": "mt-1 sm:mt-2 text-sm text-gray-500 sm:block sm:text-xl"}).contents[0]
         except:
             song_rank = song.find("div", {"class": "font-bold sm:font-extrabold leading-7 text-base sm:text-xl"}).contents[0].strip()
+        try:
+            song_artists = song.find("span", {"class": "mt-1 sm:mt-2 text-sm text-gray-500 sm:block sm:text-xl"}).contents[0]
+        except:
             song_artists = song.find("span", {"class": "mt-1 sm:mt-2 text-sm text-gray-500 sm:block sm:text-lg"}).contents[0]
         song_info["name"] = song_name.replace("#", "").strip()
         song_info["tiktok_rank"] = song_rank
