@@ -13,7 +13,7 @@ app.layout = html.Div(
         html.Div(
             className="navigation-bar",
             style={
-                "background-color": "#DEFBD6",
+                "background-color": "Black",
                 "padding": "10px",
                 "top": "0",
                 "left": "0",
@@ -28,15 +28,15 @@ app.layout = html.Div(
             children=[
                 html.H1(
                     children=[
-                        html.Span("Spotify", style={"color": "#1ed760", 'text-shadow': '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'}),
-                        html.Span("/", style={"color": "black"}),
-                        html.Span("T", style={"color": "#00f2ea", 'text-shadow': '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'}),
-                        html.Span("i", style={"color": "Black"}),
-                        html.Span("k", style={"color": "#ff0050", 'text-shadow': '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'}),
-                        html.Span("T", style={"color": "#00f2ea", 'text-shadow': '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'}),
-                        html.Span("o", style={"color": "Black"}),
-                        html.Span("k", style={"color": "#ff0050", 'text-shadow': '-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000'}),
-                        html.Span(" Chart Comparison", style={"color": "black"}),
+                        html.Span("Spotify", style={"color": "#1ed760"}),
+                        html.Span("/", style={"color": "white"}),
+                        html.Span("T", style={"color": "#00f2ea"}),
+                        html.Span("i", style={"color": "white"}),
+                        html.Span("k", style={"color": "#ff0050"}),
+                        html.Span("T", style={"color": "#00f2ea"}),
+                        html.Span("o", style={"color": "white"}),
+                        html.Span("k", style={"color": "#ff0050"}),
+                        html.Span(" Chart Comparison", style={"color": "white"}),
                     ],
                     style={
                         "margin-top": "10px",
@@ -61,7 +61,7 @@ app.layout = html.Div(
                                     "font-weight": "bold"
                                 },
                             ),
-                            style={"background-color": "#FBD6F9", "height": "20px", 'margin-right': '5px'},
+                            style={"background-color": "#CDCBCD", "height": "20px", 'margin-right': '5px'},
                         )
                         for page in page_registry.values()
                     ],

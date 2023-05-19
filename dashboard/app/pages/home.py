@@ -32,35 +32,65 @@ def update_charts(n):
     spotify_table = dash_table.DataTable(
         id="spotify-table",
         columns=[
-            {"name": "Song", "id": "name"},
+            {"name": "Song", "id": "track_name"},
             {"name": "Artist", "id": "spotify_names"},
             {"name": "Spotify Rank", "id": "spotify_rank"},
             {"name": "TikTok Rank", "id": "tiktok_rank"}
         ],
         data=spotify_data.to_dict("records"),
         style_header={
-            "fontWeight": "bold"
+            "fontWeight": "bold",
+            "backgroundColor": "#CDCBCD",
+            "text-decoration": 'underline'
         },
         style_cell={
             "textAlign": "left",
+            "fontWeight": "bold",
+            "maxWidth": "200px",
+            "whiteSpace": "normal"
+        },
+        style_data_conditional=[
+        {
+            'if': {'row_index': 'odd'},
+            'backgroundColor': '#1ed760'
+        },
+        {
+            'if': {'row_index': 'even'},
+            'backgroundColor': 'white'
         }
+    ]
     )
 
     tiktok_table = dash_table.DataTable(
         id="tiktok-table",
         columns=[
-            {"name": "Song", "id": "name"},
+            {"name": "Song", "id": "track_name"},
             {"name": "Artist", "id": "spotify_names"},
             {"name": "TikTok Rank", "id": "tiktok_rank"},
             {"name": "Spotify Rank", "id": "spotify_rank"}
         ],
         data=tiktok_data.to_dict("records"),
         style_header={
-            "fontWeight": "bold"
+            "fontWeight": "bold",
+            "backgroundColor": "#CDCBCD",
+            "text-decoration": 'underline'
         },
         style_cell={
             "textAlign": "left",
+            "fontWeight": "bold",
+            "maxWidth": "200px",
+            "whiteSpace": "normal"
+        },
+        style_data_conditional=[
+        {
+            'if': {'row_index': 'odd'},
+            'backgroundColor': 'rgb(255, 0, 80, 0.65)'
+        },
+        {
+            'if': {'row_index': 'even'},
+            'backgroundColor': '#00f2ea'
         }
+    ]
     )
 
     return html.Div([
@@ -71,5 +101,5 @@ def update_charts(n):
         html.Div([
             html.H3("TikTok Top 10"),
             tiktok_table
-        ], className="table-container")
-    ], style={"display": "grid", "grid-template-columns": "1fr 1fr", "gap": "20px"})
+        ], className="table-container"),
+    ], style={"margin": "100px"})
