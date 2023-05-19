@@ -267,59 +267,59 @@ def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> 
 
 def handler(event=None, context=None, callback=None):
     START = datetime.now()
-    # try:
-    load_dotenv()
-    client_id = os.getenv("CLIENT_ID")
-    client_secret = os.getenv("CLIENT_SECRET")
-    token = get_auth_token(client_id, client_secret)
-    print("Connected to API")
-    headers = get_auth_header(token)
-    print("Gathering top 50")
-    result = get_spotify_top_50(TOP_50_PLAYLIST_ID, headers)
-    spotify_tracks = create_track_dicts(result, headers)
-    print("Complete!\n")
-    print("Fetching html from TikTok charts...")
-    soup = load_tiktok_html_soup(TIKTOK_BASE_URL)
-    print("Complete!\n")
-    print("Scraping data from TikTok html...")
-    tiktok_songs = scrape_tiktok_soup(soup)
-    print("Complete!\n")
-    print("Matching tiktok songs to spotify counterparts...")
-    unmatched_tiktok_songs = match_tiktok_to_spotify(tiktok_songs, spotify_tracks)
-    print("Complete!\n")
-    print("Gathering tiktok attributes from spotify api")
-    get_tiktok_tracks_api_info(unmatched_tiktok_songs, headers)
-    get_tiktok_attributes(unmatched_tiktok_songs, headers)
-    print("Complete!\n")
+    try:
+        load_dotenv()
+        client_id = os.getenv("CLIENT_ID")
+        client_secret = os.getenv("CLIENT_SECRET")
+        token = get_auth_token(client_id, client_secret)
+        print("Connected to API")
+        headers = get_auth_header(token)
+        print("Gathering top 50")
+        result = get_spotify_top_50(TOP_50_PLAYLIST_ID, headers)
+        spotify_tracks = create_track_dicts(result, headers)
+        print("Complete!\n")
+        print("Fetching html from TikTok charts...")
+        soup = load_tiktok_html_soup(TIKTOK_BASE_URL)
+        print("Complete!\n")
+        print("Scraping data from TikTok html...")
+        tiktok_songs = scrape_tiktok_soup(soup)
+        print("Complete!\n")
+        print("Matching tiktok songs to spotify counterparts...")
+        unmatched_tiktok_songs = match_tiktok_to_spotify(tiktok_songs, spotify_tracks)
+        print("Complete!\n")
+        print("Gathering tiktok attributes from spotify api")
+        get_tiktok_tracks_api_info(unmatched_tiktok_songs, headers)
+        get_tiktok_attributes(unmatched_tiktok_songs, headers)
+        print("Complete!\n")
 
-    conn = get_db_connection()
+        conn = get_db_connection()
 
-    print("Adding spotify tracks")
-    add_track_data(spotify_tracks, conn)
-    print("Complete!\n")
-    print("Adding spotify artists")
-    add_artist_data(spotify_tracks, conn)
-    print("Complete!\n")
-    print("Adding tiktok songs")
-    add_track_data(unmatched_tiktok_songs, conn)
-    print("Complete!\n")
-    print("Adding tiktok artists")
-    add_artist_data(unmatched_tiktok_songs, conn)
-    print("Complete!\n")
-    print("Success!")
-    END = datetime.now()
-    PROCESS = END - START
-    print(f"Run time: {PROCESS}")
-    return {"status_code": 200,
-            "message": "Success!"}
-    # except Exception as err:
-    #     END = datetime.now()
-    #     PROCESS = END - START
-    #     print(f"Run time: {PROCESS}")
-    #     print({"status_code": 400,
-    #             "message": err.args})
-    #     return {"status_code": 400,
-    #             "message": err.args}
+        print("Adding spotify tracks")
+        add_track_data(spotify_tracks, conn)
+        print("Complete!\n")
+        print("Adding spotify artists")
+        add_artist_data(spotify_tracks, conn)
+        print("Complete!\n")
+        print("Adding tiktok songs")
+        add_track_data(unmatched_tiktok_songs, conn)
+        print("Complete!\n")
+        print("Adding tiktok artists")
+        add_artist_data(unmatched_tiktok_songs, conn)
+        print("Complete!\n")
+        print("Success!")
+        END = datetime.now()
+        PROCESS = END - START
+        print(f"Run time: {PROCESS}")
+        return {"status_code": 200,
+                "message": "Success!"}
+    except Exception as err:
+        END = datetime.now()
+        PROCESS = END - START
+        print(f"Run time: {PROCESS}")
+        print({"status_code": 400,
+                "message": err.args})
+        return {"status_code": 400,
+                "message": err.args}
 
 
 if __name__ == "__main__":
