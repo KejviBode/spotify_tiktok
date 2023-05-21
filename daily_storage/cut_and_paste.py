@@ -62,6 +62,15 @@ def put_table_in_csv(fs: S3FileSystem, all_data: dict[dict[list[str], list[tuple
     print(f"{all_data['table_name']} added to S3 successfully")
 
 
+def get_list_from_sql(conn: connection, column_name: str, table_name: str) -> list:
+
+    sql = f"""SELECT {column_name} FROM {table_name};"""
+    with conn.cursor() as curs:
+        curs.execute(sql, (column_name, table_name))
+        tracks = curs.fetchall()
+    return [track[0] for track in tracks]
+
+
 def handler(event=None, context=None):
     try:
         load_dotenv()
@@ -71,6 +80,10 @@ def handler(event=None, context=None):
             key=os.environ["ACCESS_KEY_ID"],
             secret=os.environ["SECRET_KEY_ID"]
         )
+        # Get old track list
+        old_tracks = get_list_from_sql(conn, "track_name", "track")
+        old_artists = get_list_from_sql(conn, "spotify_name", "artist")
+
         # List of entities in dtabase in order of deletion to prevent Foreign key conflicts
         table_list = ["artist_popularity", "artist_genre",
                       "track_popularity", "track_artist", "artist", "genre", "track"]
@@ -87,9 +100,14 @@ def handler(event=None, context=None):
         else:
             print("Failure to upload all tables")
 
+        # print(old_tracks)
+        # print(old_artist)
+
         return {
             'status_code': 200,
-            "message": "Success"
+            "message": "Success",
+            "old_artists": old_artists,
+            "old_tracks": old_tracks
         }
     except Exception as err:
         return {

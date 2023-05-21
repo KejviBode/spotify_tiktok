@@ -50,7 +50,7 @@ variable "CLIENT_SECRET" {
 variable "step_function_name" {
   description = "spotify_tiktok_step_function"
   type        = string
-  default     = "spotify_tiktok_step_function"
+  default     = "spotify-tiktok-step-function"
 }
 
 # lambda permissions
@@ -68,7 +68,7 @@ data "aws_iam_policy_document" "assume_role" {
 }
 
 resource "aws_iam_role" "iam_for_lambda" {
-  name               = "spotify_tiktok_lambdas"
+  name               = "spotify-tiktok-lambdas"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
@@ -89,7 +89,7 @@ resource "aws_cloudwatch_log_group" "function_log_group_spotify_extract" {
 }
 
 resource "aws_iam_policy" "function_logging_policy" {
-  name = "function-logging-policy_spotify_tiktok"
+  name = "function-logging-policy-spotify-tiktok"
   policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
@@ -119,7 +119,7 @@ resource "aws_lambda_function" "spotify-tiktok-extract" {
   package_type = "Image"
   image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-daily-extraction:latest"
 
-  timeout = 120
+  timeout = 600
 
   environment {
     variables = {
@@ -145,7 +145,7 @@ resource "aws_lambda_function" "spotify-tiktok-storage" {
   package_type = "Image"
   image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-storage:latest"
 
-  timeout = 120
+  timeout = 600
 
   environment {
     variables = {
@@ -168,17 +168,17 @@ resource "aws_sns_topic" "topic" {
 resource "aws_sns_topic_subscription" "ilyas-target" {
   topic_arn = aws_sns_topic.topic.arn
   protocol  = "email"
-  endpoint  = "trainee.ilyas.abdulkadir@sigmalabs.ac.uk"
+  endpoint  = "trainee.ilyas.abdulkadir@sigmalabs.co.uk"
 }
 resource "aws_sns_topic_subscription" "kejve-target" {
   topic_arn = aws_sns_topic.topic.arn
   protocol  = "email"
-  endpoint  = "trainee.kejve.boder@sigmalabs.ac.uk"
+  endpoint  = "trainee.kejvi.bode@sigmalabs.co.uk"
 }
 resource "aws_sns_topic_subscription" "selvy-target" {
   topic_arn = aws_sns_topic.topic.arn
   protocol  = "email"
-  endpoint  = "trainee.selvy.yasotharan@sigmalabs.ac.uk"
+  endpoint  = "trainee.selvy.yasotharan@sigmalabs.co.uk"
 }
 
 # step-function stuff
@@ -256,6 +256,25 @@ resource "aws_iam_role_policy" "step_function_policy" {
           "${aws_lambda_function.spotify-tiktok-extract.arn}",
           "${aws_lambda_function.spotify-tiktok-storage.arn}"
         ]
+      }
+    ]
+  }
+  EOF
+}
+
+resource "aws_iam_role_policy" "sns_publish_policy" {
+  name = "sns-publish-policy"
+  role = aws_iam_role.step_function_role.id
+
+  policy = <<-EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "AllowSNSPublish",
+        "Effect": "Allow",
+        "Action": "sns:Publish",
+        "Resource": "${aws_sns_topic.topic.arn}"
       }
     ]
   }

@@ -44,7 +44,7 @@ resource "aws_cloudwatch_log_group" "function_log_group" {
 
 # Allows logs
 resource "aws_iam_policy" "function_logging_policy" {
-  name = "function-logging-policy"
+  name = "function-logging-policy-spotify-update"
   policy = jsonencode({
     "Version" : "2012-10-17",
     "Statement" : [
@@ -70,7 +70,7 @@ resource "aws_iam_role_policy_attachment" "function_logging_policy_attachment" {
 resource "aws_cloudwatch_event_rule" "hourly_trigger" {
   name                = "spotify_tiktok_hourly_trigger"
   description         = "Update artist followers and popularity"
-  schedule_expression = "cron(30 * * * ? *)"
+  schedule_expression = "cron(10 * * * ? *)"
 }
 
 # link trigger to lambda
@@ -113,17 +113,25 @@ variable "SECRET_KEY_ID" {
   type      = string
   sensitive = true
 }
+variable "CLIENT_ID" {
+  type      = string
+  sensitive = true
+}
+variable "CLIENT_SECRET" {
+  type      = string
+  sensitive = true
+}
 
 #definitely change
 resource "aws_lambda_function" "update" {
-  function_name = "spotify-tiktok-daily-update"
+  function_name = "spotify-tiktok-update"
   role          = aws_iam_role.iam_for_lambda.arn
   architectures = ["arm64"]
 
   package_type = "Image"
-  image_uri    = "complete..."
+  image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-1-hour-update:latest"
 
-  timeout = 120
+  timeout = 600
 
   environment {
     variables = {
@@ -134,6 +142,8 @@ resource "aws_lambda_function" "update" {
       DB_PASSWORD = var.DB_PASSWORD
       ACCESS_KEY_ID = var.ACCESS_KEY_ID
       SECRET_KEY_ID = var.SECRET_KEY_ID
+      CLIENT_ID = var.CLIENT_ID
+      CLIENT_SECRET = var.CLIENT_SECRET
     }
   }
 }
