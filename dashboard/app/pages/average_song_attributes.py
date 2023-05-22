@@ -19,7 +19,7 @@ layout = html.Main([html.Div(style={"margin-top": "100px"}),
           Input("attribute-dropdown", "value"))
 def attribute_bar_chart(user_input):
     with conn, conn.cursor() as cur:
-        if user_input == "All":
+        if user_input == "All" or user_input == None:
             sql_input = '''
             SELECT
                 'In Spotify Charts' AS situation,

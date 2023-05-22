@@ -52,4 +52,3 @@ def get_top_ten(chart_type: str, conn) -> list[dict]:
 
 load_dotenv()
 conn = get_db_connection()
-
