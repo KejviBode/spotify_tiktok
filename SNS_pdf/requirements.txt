@@ -1,6 +1,7 @@
-pandas
-seaborn
+boto3
 matplotlib
-psycopg2
 datetime
 python-dotenv
+psycopg2
+pandas
+seaborn
