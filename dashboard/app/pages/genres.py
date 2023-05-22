@@ -37,6 +37,6 @@ def song_attribute_bar_chart(user_input):
             ORDER BY genre_count DESC LIMIT 20;"
     
     df = pd.read_sql_query(sql_query, conn)
-    fig = px.bar(df, x='genre_name', y='genre_count', title='Top 20 Genres')
-    fig.update_layout(xaxis_title="Genres", yaxis_title="Count")
+    fig = px.bar(df, x='genre_name', y='genre_count', title='Top 20 Genres', color='genre_name')
+    fig.update_layout(xaxis_title="Genres", yaxis_title="Count", showlegend=False, title="Top 20 Genres")
     return fig

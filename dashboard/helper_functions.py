@@ -52,3 +52,21 @@ def get_top_ten(chart_type: str, conn) -> list[dict]:
 
 load_dotenv()
 conn = get_db_connection()
+
+def get_all_current_songs(conn):
+    with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
+        sql_query = "Select track.track_name, STRING_AGG(artist.spotify_name, ', ') AS artists FROM track \
+            JOIN track_artist ON track.track_spotify_id = track_artist.track_spotify_id \
+            JOIN artist ON track_artist.artist_spotify_id = artist.artist_spotify_id \
+            GROUP BY track.track_name;"
+        cur.execute(sql_query)
+        result = cur.fetchall()
+        for item in result:
+            print(item)
+            print("   ")
+
+get_all_current_songs(conn)
+
+# Join name and artists together for output options (song - artists) (this is in the dropdown list, but as a type search)
+# In graph function, split the name on " -", then use the first one to search the database for that song name
+# Have empty graph (rather than error) for page without input (i.e. if user_input is None)
