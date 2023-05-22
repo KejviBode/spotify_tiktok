@@ -294,3 +294,4 @@ resource "aws_cloudwatch_event_target" "target" {
   arn      = aws_sfn_state_machine.sfn_state_machine.arn
   role_arn = aws_iam_role.step_function_role.arn
 }
+# find permission to allow execution from aws cloudwatch
