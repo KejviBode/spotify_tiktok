@@ -26,7 +26,8 @@ def attribute_bar_chart(user_input):
                 AVG(track_danceability) AS avg_danceability,
                 AVG(track_energy) AS avg_energy,
                 AVG(track_valence) AS avg_valence,
-                AVG(track_speechiness) AS avg_speechiness
+                AVG(track_speechiness) AS avg_speechiness,
+                AVG((track_tempo - 50)/200) AS avg_tempo
             FROM
                 track
             WHERE
@@ -41,7 +42,8 @@ def attribute_bar_chart(user_input):
                 AVG(track_danceability) AS avg_danceability,
                 AVG(track_energy) AS avg_energy,
                 AVG(track_valence) AS avg_valence,
-                AVG(track_speechiness) AS avg_speechiness
+                AVG(track_speechiness) AS avg_speechiness,
+                AVG((track_tempo - 50)/200) AS avg_tempo
             FROM
                 track
             WHERE
@@ -60,6 +62,7 @@ def attribute_bar_chart(user_input):
                 graph_dict["Energy"] = results[x][2]
                 graph_dict["Valence"] = results[x][3]
                 graph_dict["Speechiness"] = results[x][4]
+                graph_dict["Tempo"] = results[x][5]
                 graph_dicts.append(graph_dict)
         else:
             if user_input == "Spotify":
@@ -77,7 +80,8 @@ def attribute_bar_chart(user_input):
                     AVG(track_danceability) AS avg_danceability,
                     AVG(track_energy) AS avg_energy,
                     AVG(track_valence) AS avg_valence,
-                    AVG(track_speechiness) AS avg_speechiness
+                    AVG(track_speechiness) AS avg_speechiness,
+                    AVG((track_tempo - 50)/200) AS avg_tempo
                 FROM
                     track
                 GROUP BY
@@ -94,6 +98,7 @@ def attribute_bar_chart(user_input):
                 graph_dict["Energy"] = results[x][2]
                 graph_dict["Valence"] = results[x][3]
                 graph_dict["Speechiness"] = results[x][4]
+                graph_dict["Tempo"] = results[x][5]
                 graph_dicts.append(graph_dict)
             
             graph_dict = {}
@@ -102,7 +107,8 @@ def attribute_bar_chart(user_input):
             graph_dict["Energy"] = (results[1][2] + results[2][2])/2
             graph_dict["Valence"] = (results[1][3] + results[2][3])/2
             graph_dict["Speechiness"] = (results[1][4] + results[2][4])/2
+            graph_dict["Tempo"] = (results[1][5] + results[1][5])/2
             graph_dicts.append(graph_dict)
 
-        fig = px.bar(graph_dicts, x='name', y=['Danceability', 'Energy', 'Valence', 'Speechiness'], barmode='group', title='Bar Chart')
+        fig = px.bar(graph_dicts, x='name', y=['Danceability', 'Energy', 'Valence', 'Speechiness', 'Tempo'], barmode='group', title='Bar Chart')
         return fig
