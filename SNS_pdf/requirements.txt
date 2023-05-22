@@ -1,0 +1,6 @@
+pandas
+seaborn
+matplotlib
+psycopg2
+datetime
+python-dotenv
