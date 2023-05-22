@@ -84,11 +84,11 @@ def update_charts(n):
         style_data_conditional=[
         {
             'if': {'row_index': 'odd'},
-            'backgroundColor': 'rgb(255, 0, 80, 0.65)'
+            'backgroundColor': 'rgb(255, 0, 80, 0.2)'
         },
         {
             'if': {'row_index': 'even'},
-            'backgroundColor': '#00f2ea'
+            'backgroundColor': 'rgb(0, 242, 234, 0.2)'
         }
     ]
     )
@@ -102,4 +102,4 @@ def update_charts(n):
             html.H3("TikTok Top 10"),
             tiktok_table
         ], className="table-container"),
-    ], style={"margin": "100px"})
+    ], style={"marginLeft": "100px", "marginRight": "100px", "marginBottom": "50px"})
