@@ -1,8 +1,10 @@
 venv
 .env
-test
+test/
 .vscode
-sns_lambda
 geckodriver.log
 extract/debug.py
 tmp
+extract/__pycache__
+terraform_test/
+__pycache__

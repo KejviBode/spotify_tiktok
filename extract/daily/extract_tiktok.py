@@ -1,20 +1,11 @@
-
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.firefox.options import Options
-from selenium.webdriver import Firefox, FirefoxProfile
+'''Helper functions to scrape tiktok charts webpage'''
 from bs4 import BeautifulSoup
 from rapidfuzz import fuzz
-from datetime import datetime
-from pprint import pprint
 import string
 from urllib.request import urlopen, Request
 
-from dotenv import load_dotenv
 from requests import post, get
-import os, json
+import json
 import base64
 
 
@@ -23,63 +14,6 @@ TIKTOK_COOKIE = {"name": "cookie-consent", "value": "{%22ga%22:true%2C%22af%22:t
 ARBITRARY_LIST = [{"name":"Funny son"}, {"name":"Crack Rock"}, {"name":"gobbledeegook"}, {"name":"ghost"}]
 SPOTIFY_BASE_URL = "http://api.spotify.com/v1/"
 TOKCHARTS_BASE_URL = "https://tokchart.com/?page="
-
-
-def load_tiktok_html_soup(url: str = TIKTOK_BASE_URL) -> BeautifulSoup:
-    '''
-    Loads the TikTok charts page, making it scrapeable using selenium
-    and returns a Beautiful Soup object
-    '''
-    # firefox_options = Options()
-    # firefox_options.add_argument("-headless")
-    # firefox_options.binary_location = '/opt/firefox/113.0/firefox/firefox'
-    # tmp_dir = '/tmp/ff'
-    # os.mkdir(tmp_dir)
-    # ff_profile = FirefoxProfile(profile_directory=tmp_dir)
-    # driver = Firefox(firefox_profile=ff_profile,
-    #                  executable_path='/opt/geckodriver/0.33.0/geckodriver',
-    #                  options=firefox_options,
-    #                  service_log_path='/tmp/geckodriver.log')
-    driver = webdriver.Firefox()
-    driver.get(url)
-    driver.add_cookie(TIKTOK_COOKIE)
-    got_it_button = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "detailBtnTips-got--D3sdb")))
-    got_it_button.click()
-    view_more_button = WebDriverWait(driver, 10).until(
-        EC.presence_of_element_located((By.CLASS_NAME, "button--Zmt5a")))
-    view_more_button.click()
-    for i in range (100):
-        try:
-            view_more_button.click()
-        except:
-            continue
-    html = driver.page_source
-    driver.quit()
-    soup = BeautifulSoup(html, "html.parser")
-    return soup
-
-
-def scrape_tiktok_soup(soup: BeautifulSoup) -> list[dict]:
-    '''
-    Searches the TikTok soup for songs and returns a list of 
-    the song's properties
-    '''
-    song_data = []
-    songs = soup.find_all("div", 
-                        "sound-item-container--fNzli sound-item-container--Huh+H")
-    for song in songs:
-        song_info= {}
-        song_rank = song.find("span", {"class": "rankingIndex--CRstI rankingIndex--d5sdy"}).contents[0]
-        song_name = song.find("span",{"class":"music-name--Z2hNc music-name--G2iqZ"}).contents[0]
-        song_artists = song.find("span", {"class":"auther-name--3HglG auther-name--cXfro"}).contents[0].split("&")
-        song_info["name"] = song_name.replace("#","").strip()
-        song_info["tiktok_rank"] = song_rank
-        song_info["spotify_rank"] = None
-        song_info["check_artists"] = [artist.strip() for artist in song_artists]
-        song_info["in_tiktok"] = True
-        song_info["in_spotify"] = False
-        song_data.append(song_info)
-    return song_data
 
 
 def load_tok_chart_soup(page_num: int, tokchart_url: str = TOKCHARTS_BASE_URL) -> list[BeautifulSoup]:
@@ -106,6 +40,8 @@ def get_tokchart_relevant_div(tok_soup: BeautifulSoup) -> list[dict]:
     for song in soup_div:
         song_info = {}
         song_name = song.find("h4").find("a").contents[0].strip()
+        if "original sound" in song_name:
+            continue
         ## This try and except block is here because sometimes the formatting of the css is different
         ## and so the identifier also changes
         try:
@@ -143,7 +79,6 @@ def search_multiple_tok_pages(base_url: str = TOKCHARTS_BASE_URL) -> list[dict]:
     return tracks
 
 
-
 def match_tiktok_to_spotify(tiktok_tracks: list[dict], spotify_tracks: list[dict]) -> list[dict]:
     '''
     Matches songs on tiktok and spotify top charts and 
@@ -153,7 +88,7 @@ def match_tiktok_to_spotify(tiktok_tracks: list[dict], spotify_tracks: list[dict
     for tiktok_track in tiktok_tracks:
         for spotify_track in spotify_tracks:
             if tiktok_track["name"] == spotify_track["name"] or \
-                (fuzz.ratio(tiktok_track["name"].lower(), spotify_track["name"].lower())) > 90:
+                (fuzz.ratio(tiktok_track["name"].lower(), spotify_track["name"].lower())) > 80:
                 tiktok_track["in_spotify"] = True
                 spotify_track["in_tiktok"] = True
                 spotify_track["tiktok_rank"] = tiktok_track["tiktok_rank"]
@@ -257,20 +192,10 @@ def get_tiktok_tracks_api_info(songs: list[dict], headers: dict) -> list[dict]:
             continue
         else:
             song["id"] = track[0]["id"]
-            song["popularity"] = track[0]["popularity"]
             song["artists"] = []
             for artist in track[0]["artists"]:
                 track_artist = {}
                 track_artist["name"] = artist["name"]
                 track_artist["id"] = artist["id"]
                 song["artists"].append(track_artist)
-            # final_artist_check = [artist["name"] for artist in song["artists"]]
-            # if song["check_artists"][0] not in final_artist_check:
-            #     print("Incorrect song found so disregarding")
-            #     song["id"] = None
     return songs
-
-
-if __name__ == "__main__":
-    tracks = search_multiple_tok_pages()
-    print(tracks)
