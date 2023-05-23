@@ -2,6 +2,6 @@ boto3
 matplotlib
 datetime
 python-dotenv
-psycopg2
+psycopg2-binary
 pandas
 seaborn

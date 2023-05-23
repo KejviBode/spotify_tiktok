@@ -76,7 +76,7 @@ def handler(event=None, context=None):
 
         date = dt.datetime.now()
         date_str = f"{date.strftime('%Y')}/{date.strftime('%m')}/{date.strftime('%d')}"
-        file = date_str + '/test.pdf'
+        file = date_str + '/report.pdf'
         s3.put_object(Body=data, Bucket=bucket_name, Key=file)
         return {
             "status_code": 200,
@@ -87,3 +87,7 @@ def handler(event=None, context=None):
             "status_code": 400,
             "message": err.args[0]
         }
+
+
+if __name__ == "__main__":
+    handler()

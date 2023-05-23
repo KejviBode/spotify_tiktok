@@ -67,8 +67,8 @@ resource "aws_iam_role_policy_attachment" "function_logging_policy_attachment" {
 }
 
 # trigger schedule 
-resource "aws_cloudwatch_event_rule" "hourly_trigger" {
-  name                = "spotify_tiktok_hourly_trigger"
+resource "aws_cloudwatch_event_rule" "trigger" {
+  name                = "spotify_tiktok_update_trigger"
   description         = "Update artist followers and popularity"
   schedule_expression = "cron(10 * * * ? *)"
 }
@@ -76,7 +76,7 @@ resource "aws_cloudwatch_event_rule" "hourly_trigger" {
 # link trigger to lambda
 resource "aws_cloudwatch_event_target" "lambda_target" {
   arn       = aws_lambda_function.update.arn
-  rule      = aws_cloudwatch_event_rule.hourly_trigger.name
+  rule      = aws_cloudwatch_event_rule.trigger.name
   target_id = "songs-hourly-target"
 }
 
@@ -86,7 +86,7 @@ resource "aws_lambda_permission" "allow_cloudwatch_to_call_rw_fallout_retry_step
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.update.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.hourly_trigger.arn
+  source_arn    = aws_cloudwatch_event_rule.trigger.arn
 }
 
 variable "DB_HOST" {
@@ -135,14 +135,14 @@ resource "aws_lambda_function" "update" {
 
   environment {
     variables = {
-      DB_PORT     = 5432
-      DB_USER     = var.DB_USER
-      DB_HOST     = var.DB_HOST
-      DB_NAME     = var.DB_NAME
-      DB_PASSWORD = var.DB_PASSWORD
+      DB_PORT       = 5432
+      DB_USER       = var.DB_USER
+      DB_HOST       = var.DB_HOST
+      DB_NAME       = var.DB_NAME
+      DB_PASSWORD   = var.DB_PASSWORD
       ACCESS_KEY_ID = var.ACCESS_KEY_ID
       SECRET_KEY_ID = var.SECRET_KEY_ID
-      CLIENT_ID = var.CLIENT_ID
+      CLIENT_ID     = var.CLIENT_ID
       CLIENT_SECRET = var.CLIENT_SECRET
     }
   }

@@ -159,6 +159,29 @@ resource "aws_lambda_function" "spotify-tiktok-storage" {
     }
   }
 }
+# lambda report stuff
+resource "aws_lambda_function" "spotify-tiktok-report" {
+  function_name = "spotify-tiktok-report"
+  role          = aws_iam_role.iam_for_lambda.arn
+  architectures = ["arm64"]
+
+  package_type = "Image"
+  image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-daily-report:latest"
+
+  timeout = 600
+
+  environment {
+    variables = {
+      DB_PORT       = 5432
+      DB_USER       = var.DB_USER
+      DB_HOST       = var.DB_HOST
+      DB_NAME       = var.DB_NAME
+      DB_PASSWORD   = var.DB_PASSWORD
+      ACCESS_KEY_ID = var.ACCESS_KEY_ID
+      SECRET_KEY_ID = var.SECRET_KEY_ID
+    }
+  }
+}
 
 # sns topic stuff
 resource "aws_sns_topic" "topic" {
@@ -186,11 +209,16 @@ resource "aws_sfn_state_machine" "sfn_state_machine" {
   name     = var.step_function_name
   role_arn = aws_iam_role.step_function_role.arn
 
-  definition = <<EOF
+  definition = <<-EOF
   {
     "Comment": "Invoke AWS Lambda from AWS Step Functions with Terraform",
-    "StartAt": "Store",
+    "StartAt": "Report",
     "States": {
+      "Report": {
+        "Type": "Task",
+        "Resource": "${aws_lambda_function.spotify-tiktok-report.arn}",
+        "Next" : "Store"
+      },
       "Store": {
         "Type": "Task",
         "Resource": "${aws_lambda_function.spotify-tiktok-storage.arn}",
@@ -199,25 +227,12 @@ resource "aws_sfn_state_machine" "sfn_state_machine" {
       "Extract": {
         "Type": "Task",
         "Resource": "${aws_lambda_function.spotify-tiktok-extract.arn}",
-        "Next": "SNS Publish"
-      },
-      "SNS Publish": {
-        "Type": "Task",
-        "Resource": "arn:aws:states:::sns:publish",
-        "Parameters": {
-          "TopicArn": "${aws_sns_topic.topic.arn}",
-          "Message": {
-            "works": "Yes",
-            "message.$": "$"
-          }
-        },
         "End": true
       }
     }
   }
   EOF
 }
-
 
 # Creating iam role to run lambda function
 resource "aws_iam_role" "step_function_role" {
@@ -229,7 +244,7 @@ resource "aws_iam_role" "step_function_role" {
       {
         "Action": "sts:AssumeRole",
         "Principal": {
-          "Service": "states.amazonaws.com"
+          "Service": ["states.amazonaws.com", "events.amazonaws.com"]
         },
         "Effect": "Allow",
         "Sid": "StepFunctionAssumeRole"
@@ -239,6 +254,30 @@ resource "aws_iam_role" "step_function_role" {
   EOF
 }
 
+#  policy to execute step function
+resource "aws_iam_role_policy" "step_function_execution_role_policy" {
+  name = "${var.step_function_name}_role_policy"
+  role = aws_iam_role.step_function_role.id
+
+  policy = <<-EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "states:StartExecution"
+        ],
+        "Resource": "${aws_sfn_state_machine.sfn_state_machine.arn}"
+        
+      }
+    ]
+  }
+  EOF
+}
+
+
+#  Policy to allow step-func to run lambdas
 resource "aws_iam_role_policy" "step_function_policy" {
   name = "${var.step_function_name}-policy"
   role = aws_iam_role.step_function_role.id
@@ -254,7 +293,8 @@ resource "aws_iam_role_policy" "step_function_policy" {
         "Effect": "Allow",
         "Resource": [
           "${aws_lambda_function.spotify-tiktok-extract.arn}",
-          "${aws_lambda_function.spotify-tiktok-storage.arn}"
+          "${aws_lambda_function.spotify-tiktok-storage.arn}",
+          "${aws_lambda_function.spotify-tiktok-report.arn}"
         ]
       }
     ]
@@ -262,24 +302,6 @@ resource "aws_iam_role_policy" "step_function_policy" {
   EOF
 }
 
-resource "aws_iam_role_policy" "sns_publish_policy" {
-  name = "sns-publish-policy"
-  role = aws_iam_role.step_function_role.id
-
-  policy = <<-EOF
-  {
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Sid": "AllowSNSPublish",
-        "Effect": "Allow",
-        "Action": "sns:Publish",
-        "Resource": "${aws_sns_topic.topic.arn}"
-      }
-    ]
-  }
-  EOF
-}
 
 # Scheduling step function
 resource "aws_cloudwatch_event_rule" "step_function_schedule" {
@@ -294,4 +316,3 @@ resource "aws_cloudwatch_event_target" "target" {
   arn      = aws_sfn_state_machine.sfn_state_machine.arn
   role_arn = aws_iam_role.step_function_role.arn
 }
-# find permission to allow execution from aws cloudwatch
