@@ -66,28 +66,6 @@ resource "aws_iam_role_policy_attachment" "function_logging_policy_attachment" {
   policy_arn = aws_iam_policy.function_logging_policy.arn
 }
 
-# trigger schedule 
-# resource "aws_cloudwatch_event_rule" "daily_trigger" {
-#   name                = "spotify_tiktok_daily_trigger"
-#   description         = "Transfer old data from sql to S3 Bucket"
-#   schedule_expression = "cron(0 8 * * ? *)"
-# }
-
-# # link trigger to lambda
-# resource "aws_cloudwatch_event_target" "lambda_target" {
-#   arn       = aws_lambda_function.extract.arn
-#   rule      = aws_cloudwatch_event_rule.daily_trigger.name
-#   target_id = "songs-daily-target"
-# }
-
-#change
-# resource "aws_lambda_permission" "allow_cloudwatch_to_call_rw_fallout_retry_step_deletion_lambda" {
-#   statement_id  = "AllowExecutionFromCloudWatch"
-#   action        = "lambda:InvokeFunction"
-#   function_name = aws_lambda_function.extract.function_name
-#   principal     = "events.amazonaws.com"
-#   source_arn    = aws_cloudwatch_event_rule.daily_trigger.arn
-# }
 
 variable "DB_HOST" {
   type      = string
