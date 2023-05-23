@@ -52,7 +52,9 @@ def get_all_popularity(ids: list, headers: str, type: str) -> list[dict]:
         
 
 def add_popularity_to_database(popularity_data: list[dict], type: str, conn):
-    """Takes in a list of dicts of popularity data and enters them into the database"""
+    '''
+    Takes in a list of dicts of popularity data and enters them into the database
+    '''
     for item in popularity_data:
         if type == "track":
             add_track_popularity(item["id"], item["popularity"], conn)
