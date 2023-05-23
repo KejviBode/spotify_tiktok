@@ -38,7 +38,7 @@ def load_track_data(short_conn: connection, long_conn: connection):
         sql_query = "INSERT INTO track (track_spotify_id, track_name, track_danceability, \
             track_energy, track_valence, track_tempo, track_speechiness, in_spotify, \
                 in_tiktok, tiktok_rank, spotify_rank, recorded_at) \
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING"
+                    VALUES %s ON CONFLICT DO NOTHING"
         vals = [(track["track_spotify_id"], track["track_name"], track["track_danceability"], \
                     track["track_energy"], track["track_valence"], track["tempo"], track["speechiness"], \
                     track["in_spotify"], track["in_tiktok"], track["tiktok_rank"], track["spotify_rank"], \
@@ -60,7 +60,7 @@ def load_artist_data(short_conn: connection, long_conn: connection):
 
     with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "INSERT INTO artist (artist_spotify_id, spotify_name, artist_genres) \
-                    VALUES (%s, %s, %s) ON CONFLICT DO NOTHING"
+                    VALUES %s ON CONFLICT DO NOTHING"
         vals = [(artist["artist_spotify_id"], artist["spotify_name"], artist["artist_genres"]) \
                     for artist in result]
         execute_values(cur, sql_query, vals)
@@ -98,7 +98,7 @@ def load_track_popularity_data(short_conn: connection, long_conn: connection):
 
     with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "INSERT INTO track_popularity (track_spotify_id, popularity_score, created_at) \
-                    VALUES (%s, %s, %s) ON CONFLICT DO NOTHING"
+                    VALUES %s ON CONFLICT DO NOTHING"
         vals = [(item["track_spotify_id"], item["popularity_score"], item["created_at"]) \
                 for item in result]
         execute_values(cur, sql_query, vals)
@@ -115,7 +115,7 @@ def load_artist_popularity_data(short_conn: connection, long_conn: connection):
     with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "INSERT INTO artist_popularity (artist_spotify_id, artist_popularity, \
                       follower_count, created_at) \
-                    VALUES (%s, %s, %s, %s) ON CONFLICT DO NOTHING"
+                    VALUES %s ON CONFLICT DO NOTHING"
         vals = [(item["artist_spotify_id"], item["artist_popularity"], item["follower_count"], \
                  item["created_at"]) for item in result]
         execute_values(cur, sql_query, vals)
