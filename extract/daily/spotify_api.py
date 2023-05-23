@@ -7,6 +7,7 @@ from requests import post, get
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
+import operator
 
 from extract_tiktok import match_tiktok_to_spotify, \
                             get_tiktok_tracks_api_info, \
@@ -249,18 +250,14 @@ def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> 
     return unmatched_tiktok_songs
 
 
-def get_all_track_names(tracks: list[dict]) -> list:
+def match_old_tracks_and_artists(old_tracks: dict, old_artists, new_tracks: list[dict]) -> list:
     '''
-    Returns a list of all tracks and artists to be added to database
+    Matches the previous days data with today's extracted data and returns
+    a list of tracks that weren't there yesterday
     '''
-    return [[track['name'], track["artists"]] for track in tracks if "id" in track.keys()]
-
-
-def match_old_tracks_and_artists(old_tracks: dict, old_artists, new_tracks: list[list]) -> list:
     if old_tracks is None or old_artists is None:
-        return "Couldn't find old tracks and artists :(", "Couldn't find old tracks and artists :("
+        return "Couldn't find old tracks and artists :("
     new_to_track_charts = []
-    new_to_artists_charts = []
     for new_track in new_tracks:
         if "id" not in new_track.keys() or "artists" not in new_track.keys():
             continue
@@ -269,15 +266,9 @@ def match_old_tracks_and_artists(old_tracks: dict, old_artists, new_tracks: list
             if new_track["name"] == old_track[0]:
                 track_counter += 1
         if track_counter == 0:
-            new_to_track_charts.append(f"New track in the database: {new_track['name']}")
-        for new_artist in new_track["artists"]:
-            artist_counter = 0
-            for old_artist in old_artists:
-                if new_artist == old_artist:
-                    artist_counter += 1
-            if artist_counter == 0:
-                new_to_artists_charts.append(f"New artist in the database: {new_artist['name']}")
-    return new_to_track_charts, new_to_artists_charts
+            new_to_track_charts.append({"name":new_track['name'], "artists":new_track["artists"]})
+    new_to_track_charts = sorted(new_to_track_charts, key= lambda x: x['tiktok_rank'])
+    return new_to_track_charts
 
 
 def handler(event=None, context=None):
@@ -322,16 +313,15 @@ def handler(event=None, context=None):
         print("Success!")
         print(event)
         if isinstance(event, dict):
-            new_tracks, new_artists = match_old_tracks_and_artists(event["old_tracks"], event["old_artists"], spotify_tracks)
+            new_tracks = match_old_tracks_and_artists(event["old_tracks"], event["old_artists"], spotify_tracks)
         else:
-            new_tracks, new_artists = "Couldn't find old tracks and artists :(", "Couldn't find old tracks and artists :("
+            new_tracks= "Couldn't find old tracks and artists :("
         END = datetime.now()
         PROCESS = END - START
         print(f"Run time: {PROCESS}")
         return {"status_code": 200,
                 "message": "Success!",
-                "comparison_tracks": new_tracks,
-                "comparison_artists":new_artists}
+                "comparison_tracks": new_tracks}
     except Exception as err:
         END = datetime.now()
         PROCESS = END - START
