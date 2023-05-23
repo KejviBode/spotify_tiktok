@@ -61,12 +61,7 @@ def get_all_current_songs(conn):
             GROUP BY track.track_name;"
         cur.execute(sql_query)
         result = cur.fetchall()
+        result_list = []
         for item in result:
-            print(item)
-            print("   ")
-
-get_all_current_songs(conn)
-
-# Join name and artists together for output options (song - artists) (this is in the dropdown list, but as a type search)
-# In graph function, split the name on " -", then use the first one to search the database for that song name
-# Have empty graph (rather than error) for page without input (i.e. if user_input is None)
+            result_list.append(f"{item['track_name']} - {item['artists']}")
+    return result_list

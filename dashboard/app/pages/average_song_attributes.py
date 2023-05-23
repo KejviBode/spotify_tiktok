@@ -112,4 +112,5 @@ def attribute_bar_chart(user_input):
 
         fig = px.bar(graph_dicts, x='name', y=['Danceability', 'Energy', 'Valence', 'Speechiness', 'Tempo'], barmode='group', title='Bar Chart')
         fig.update_layout(xaxis_title="Track Attributes", yaxis_title="Value", title="")
+        fig.update_yaxes(range=[0, 1])
         return fig
