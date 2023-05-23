@@ -133,7 +133,7 @@ def empty_short_term_tables(short_conn: connection):
             short_conn.commit()
 
 
-if __name__ == "__main__":
+def handler(event=None, context=None):
     load_dotenv()
     short_conn = get_db_connection(False)
     long_conn = get_db_connection(True)
@@ -149,3 +149,7 @@ if __name__ == "__main__":
     print("Artist popularity data loaded")
     empty_short_term_tables(short_conn)
     print("Tables emptied")
+
+
+if __name__ == "__main__":
+    handler()
