@@ -45,6 +45,7 @@ def load_track_data(short_conn: connection, long_conn: connection):
                     track["created_at"]) for track in result]
         execute_values(cur, sql_query, vals)
         long_conn.commit()
+    return result
 
 
 def load_artist_data(short_conn: connection, long_conn: connection):
@@ -65,6 +66,7 @@ def load_artist_data(short_conn: connection, long_conn: connection):
                     for artist in result]
         execute_values(cur, sql_query, vals)
         long_conn.commit()
+    return result
 
 
 def load_track_artist_data(short_conn: connection, long_conn: connection):
@@ -137,9 +139,9 @@ def handler(event=None, context=None):
     load_dotenv()
     short_conn = get_db_connection(False)
     long_conn = get_db_connection(True)
-    load_track_data(short_conn, long_conn)
+    old_track_data = load_track_data(short_conn, long_conn)
     print("Track data loaded")
-    load_artist_data(short_conn, long_conn)
+    old_artist_data = load_artist_data(short_conn, long_conn)
     print("Artist data loaded")
     load_track_artist_data(short_conn, long_conn)
     print("Track-artist data loaded")
@@ -149,6 +151,10 @@ def handler(event=None, context=None):
     print("Artist popularity data loaded")
     empty_short_term_tables(short_conn)
     print("Tables emptied")
+    return {"status_code" : 200,
+            "message" : "Success!",
+            "old_tracks" : [track["track_name"] for track in old_track_data],
+            "old_artists": [artist["spotify_name"] for artist in old_artist_data]}
 
 
 if __name__ == "__main__":

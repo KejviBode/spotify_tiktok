@@ -258,7 +258,7 @@ def get_all_track_names(tracks: list[dict]) -> list:
 
 def match_old_tracks_and_artists(old_tracks: dict, old_artists, new_tracks: list[list]) -> list:
     if old_tracks is None or old_artists is None:
-        return "Couldn't find old tracks and artists :("
+        return "Couldn't find old tracks and artists :(", "Couldn't find old tracks and artists :("
     new_to_track_charts = []
     new_to_artists_charts = []
     for new_track in new_tracks:
