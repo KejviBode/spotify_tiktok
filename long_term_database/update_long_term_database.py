@@ -120,6 +120,16 @@ def load_artist_popularity_data(short_conn: connection, long_conn: connection):
         long_conn.commit()
 
 
+def empty_short_term_tables(short_conn: connection):
+    """Removes all the short term data from the database"""
+    tables = ["track_popularity", "artist_popularity", "artist_genre", "track_artist", \
+              "genre", "track", "artist"]
+    with short_conn, short_conn.cursor(cursor_factory=RealDictCursor) as cur:
+        for table in tables:
+            cur.execute(f"DELETE FROM {table};")
+            short_conn.commit()
+
+
 if __name__ == "__main__":
     load_dotenv()
     short_conn = get_db_connection(False)
@@ -129,3 +139,4 @@ if __name__ == "__main__":
     load_track_artist_data(short_conn, long_conn)
     load_track_popularity_data(short_conn, long_conn)
     load_artist_popularity_data(short_conn, long_conn)
+    empty_short_term_tables(short_conn)
