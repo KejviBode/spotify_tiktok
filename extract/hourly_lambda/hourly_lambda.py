@@ -10,7 +10,9 @@ from helper_functions import get_db_connection, get_auth_token, get_auth_header,
 
 
 def check_database_empty(conn) -> bool:
-    """Checks if the database is empty"""
+    '''
+    Checks if the database is empty
+    '''
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "SELECT COUNT(*) FROM track"
         cur.execute(sql_query)
@@ -22,7 +24,9 @@ def check_database_empty(conn) -> bool:
 
 
 def get_column_values(table_name: str, column_name: str, conn) -> list[int]:
-    """Takes a table and column name and returns a list of values from that table column"""
+    '''
+    Takes a table and column name and returns a list of values from that table column
+    '''
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         query = f"SELECT {column_name} FROM {table_name}"
         cur.execute(query)
@@ -31,7 +35,9 @@ def get_column_values(table_name: str, column_name: str, conn) -> list[int]:
 
 
 def get_all_popularity(ids: list, headers: str, type: str) -> list[dict]:
-    """Takes in a list of ids and returns a list of dicts with popularity data"""
+    '''
+    Takes in a list of ids and returns a list of dicts with popularity data
+    '''
     popularity_scores = []
     for id in ids:
         popularity_data = {"id": id}
@@ -55,7 +61,9 @@ def add_popularity_to_database(popularity_data: list[dict], type: str, conn):
 
 
 def add_track_popularity(track_id: int, popularity: int, conn):
-    """Takes in a track id and popularity and adds them to the track_popularity table"""
+    '''
+    Takes in a track id and popularity and adds them to the track_popularity table
+    '''
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_input = "INSERT INTO track_popularity (track_spotify_id, popularity_score)\
                     VALUES (%s, %s) ON CONFLICT DO NOTHING"
@@ -65,7 +73,9 @@ def add_track_popularity(track_id: int, popularity: int, conn):
 
 
 def add_artist_popularity_data(artist_id: str, popularity: int, follower_count: int, conn):
-    """Takes in data on artist popularity and enters into the artist_popularity table"""
+    '''
+    Takes in data on artist popularity and enters into the artist_popularity table
+    '''
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_input = "INSERT INTO artist_popularity (artist_spotify_id, artist_popularity, \
             follower_count)\
