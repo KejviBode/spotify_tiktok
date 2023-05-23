@@ -128,7 +128,8 @@ def empty_short_term_tables(short_conn: connection):
               "genre", "track", "artist"]
     with short_conn, short_conn.cursor(cursor_factory=RealDictCursor) as cur:
         for table in tables:
-            cur.execute(f"DELETE FROM {table};")
+            vals = [table]
+            cur.execute("DELETE FROM %s;", table)
             short_conn.commit()
 
 
