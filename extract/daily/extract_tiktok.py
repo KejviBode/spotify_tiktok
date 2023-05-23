@@ -198,8 +198,4 @@ def get_tiktok_tracks_api_info(songs: list[dict], headers: dict) -> list[dict]:
                 track_artist["name"] = artist["name"]
                 track_artist["id"] = artist["id"]
                 song["artists"].append(track_artist)
-            # final_artist_check = [artist["name"] for artist in song["artists"]]
-            # if song["check_artists"][0] not in final_artist_check:
-            #     print("Incorrect song found so disregarding")
-            #     song["id"] = None
     return songs
