@@ -1,14 +1,11 @@
 '''Helper functions to scrape tiktok charts webpage'''
 from bs4 import BeautifulSoup
 from rapidfuzz import fuzz
-from datetime import datetime
-from pprint import pprint
 import string
 from urllib.request import urlopen, Request
 
-from dotenv import load_dotenv
 from requests import post, get
-import os, json
+import json
 import base64
 
 
