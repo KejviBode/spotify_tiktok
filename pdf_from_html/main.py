@@ -48,11 +48,11 @@ df_both = get_average_attributes(conn, in_spotify=True, in_tiktok=True)
 
 #  create plotly graphs
 fig_spotify = px.bar(df_spotify.melt(), x='variable',
-                     y='value', title='Average Song Attributes for Spotify top 100 tracks')
+                     y='value', title='Avg attributes for Spotify top 100')
 fig_spotify.update_yaxes(range=[0, 1])
 
 fig_both = px.bar(df_spotify.melt(), x='variable',
-                  y='value', title='Average Song Attributes for tracks in both Spotify and TikTok top 100')
+                  y='value', title='Avg attributes for Spotify & TikTok top 100')
 fig_both.update_yaxes(range=[0, 1])
 
 #  find new artist data
@@ -140,13 +140,31 @@ html_content = f"""
     </header>
     
     <div class="graph-container">
-      <div class="graph" id="graph1">{fig_spotify.to_html()}</div>
-      <div class="graph" id="graph2">{fig_both.to_html()}</div>
+      <div class="graph" id="graph1" style="width: 50%;">{fig_spotify.to_html()}</div>
+      <div class="graph" id="graph2" style="width: 50%;">{fig_both.to_html()}</div>
     </div>
     
     <div class="table-container">
-      <table id="table1">{test_names}</table>
-      <table id="table2"></table>
+      <table id="table1">
+        <thead>
+          <tr>
+            <th>New artists</th>
+          </tr>
+        </thead>
+        <tbody>
+          {test_names.to_html()}
+        </tbody>
+      </table>
+      <table id="table2">
+        <thead>
+          <tr>
+            <th>New tracks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {test_names.to_html()}
+        </tbody>
+      </table>
     </div>
   </div>
 </body>
