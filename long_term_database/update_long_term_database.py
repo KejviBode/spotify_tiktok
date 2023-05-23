@@ -40,7 +40,7 @@ def load_track_data(short_conn: connection, long_conn: connection):
                 in_tiktok, tiktok_rank, spotify_rank, recorded_at) \
                     VALUES %s ON CONFLICT DO NOTHING"
         vals = [(track["track_spotify_id"], track["track_name"], track["track_danceability"], \
-                    track["track_energy"], track["track_valence"], track["tempo"], track["speechiness"], \
+                    track["track_energy"], track["track_valence"], track["track_tempo"], track["track_speechiness"], \
                     track["in_spotify"], track["in_tiktok"], track["tiktok_rank"], track["spotify_rank"], \
                     track["created_at"]) for track in result]
         execute_values(cur, sql_query, vals)
@@ -52,8 +52,8 @@ def load_artist_data(short_conn: connection, long_conn: connection):
     with short_conn, short_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "SELECT artist.artist_spotify_id, artist.spotify_name, STRING_AGG(genre.genre_name, ', ') AS genre_names \
             FROM artist \
-            JOIN artist_genre ON artist.artist_spotify_id = artist_genre.artist_spotify_id \
-            JOIN genre ON artist_genre.genre_id = genre.genre_id \
+            LEFT JOIN artist_genre ON artist.artist_spotify_id = artist_genre.artist_spotify_id \
+            LEFT JOIN genre ON artist_genre.genre_id = genre.genre_id \
             GROUP BY artist.artist_spotify_id, artist.spotify_name;"
         cur.execute(sql_query)
         result = cur.fetchall()
@@ -61,7 +61,7 @@ def load_artist_data(short_conn: connection, long_conn: connection):
     with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "INSERT INTO artist (artist_spotify_id, spotify_name, artist_genres) \
                     VALUES %s ON CONFLICT DO NOTHING"
-        vals = [(artist["artist_spotify_id"], artist["spotify_name"], artist["artist_genres"]) \
+        vals = [(artist["artist_spotify_id"], artist["spotify_name"], artist["genre_names"]) \
                     for artist in result]
         execute_values(cur, sql_query, vals)
         long_conn.commit()
@@ -75,18 +75,19 @@ def load_track_artist_data(short_conn: connection, long_conn: connection):
         result = cur.fetchall()
 
     with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
-        sql_query = "INSERT INTO track_artist (track_spotify_id, artist_spotify_id) \
-                    SELECT %s, %s \
-                    WHERE NOT EXISTS ( \
-                        SELECT 1 \
-                        FROM track_artist \
-                        WHERE track_spotify_id = %s AND artist_spotify_id = %s) \
-                    ON CONFLICT DO NOTHING"
+        for item in result:
+            sql_query = "INSERT INTO track_artist (track_spotify_id, artist_spotify_id) \
+                        SELECT %s, %s \
+                        WHERE NOT EXISTS ( \
+                            SELECT 1 \
+                            FROM track_artist \
+                            WHERE track_spotify_id = %s AND artist_spotify_id = %s) \
+                        ON CONFLICT DO NOTHING"
 
-        vals = [(item["track_spotify_id"], item["artist_spotify_id"], item["track_spotify_id"], \
-                item["artist_spotify_id"]) for item in result]
-        execute_values(cur, sql_query, vals)
-        long_conn.commit()
+            vals = (item["track_spotify_id"], item["artist_spotify_id"], item["track_spotify_id"], \
+                    item["artist_spotify_id"])
+            cur.execute(sql_query, vals)
+            long_conn.commit()
 
 
 def load_track_popularity_data(short_conn: connection, long_conn: connection):
@@ -128,7 +129,7 @@ def empty_short_term_tables(short_conn: connection):
               "genre", "track", "artist"]
     with short_conn, short_conn.cursor(cursor_factory=RealDictCursor) as cur:
         for table in tables:
-            cur.execute("DELETE FROM %s;", (table,))
+            cur.execute(f"DELETE FROM {table};")
             short_conn.commit()
 
 
@@ -137,8 +138,14 @@ if __name__ == "__main__":
     short_conn = get_db_connection(False)
     long_conn = get_db_connection(True)
     load_track_data(short_conn, long_conn)
+    print("Track data loaded")
     load_artist_data(short_conn, long_conn)
+    print("Artist data loaded")
     load_track_artist_data(short_conn, long_conn)
+    print("Track-artist data loaded")
     load_track_popularity_data(short_conn, long_conn)
+    print("Track popularity data loaded")
     load_artist_popularity_data(short_conn, long_conn)
+    print("Artist popularity data loaded")
     empty_short_term_tables(short_conn)
+    print("Tables emptied")
