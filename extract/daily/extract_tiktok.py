@@ -206,8 +206,3 @@ def get_tiktok_tracks_api_info(songs: list[dict], headers: dict) -> list[dict]:
             #     print("Incorrect song found so disregarding")
             #     song["id"] = None
     return songs
-
-
-if __name__ == "__main__":
-    tracks = search_multiple_tok_pages()
-    print(tracks)

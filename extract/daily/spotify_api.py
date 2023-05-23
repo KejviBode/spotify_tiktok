@@ -262,23 +262,28 @@ def match_old_tracks_and_artists(old_tracks: dict, old_artists, new_tracks: list
     new_to_track_charts = []
     new_to_artists_charts = []
     for new_track in new_tracks:
+        if "id" not in new_track.keys() or "artists" not in new_track.keys():
+            continue
         track_counter = 0
         for old_track in old_tracks:
             if new_track["name"] == old_track[0]:
                 track_counter += 1
-        if counter == 0:
+        if track_counter == 0:
             new_to_track_charts.append(f"New track in the database: {new_track['name']}")
         for new_artist in new_track["artists"]:
             artist_counter = 0
             for old_artist in old_artists:
                 if new_artist == old_artist:
-                    counter += 1
+                    artist_counter += 1
             if artist_counter == 0:
-                new_to_artists_charts.append(f"New artist in the database: {new_artist}")
+                new_to_artists_charts.append(f"New artist in the database: {new_artist['name']}")
     return new_to_track_charts, new_to_artists_charts
 
 
 def handler(event=None, context=None):
+    '''
+    Logic to run extraction
+    '''
     START = datetime.now()
     try:
         load_dotenv()
