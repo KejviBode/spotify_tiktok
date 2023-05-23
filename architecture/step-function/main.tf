@@ -47,6 +47,15 @@ variable "CLIENT_SECRET" {
   type      = string
   sensitive = true
 }
+variable "DB_LONG_TERM_HOST" {
+  type      = string
+  sensitive = true
+}
+variable "DB_LONG_TERM_NAME" {
+  type      = string
+  sensitive = true
+}
+
 variable "step_function_name" {
   description = "spotify_tiktok_step_function"
   type        = string
@@ -156,6 +165,8 @@ resource "aws_lambda_function" "spotify-tiktok-storage" {
       DB_PASSWORD   = var.DB_PASSWORD
       ACCESS_KEY_ID = var.ACCESS_KEY_ID
       SECRET_KEY_ID = var.SECRET_KEY_ID
+      DB_LONG_TERM_NAME = var.DB_LONG_TERM_NAME
+      DB_LONG_TERM_HOST = var.DB_LONG_TERM_HOST
     }
   }
 }
