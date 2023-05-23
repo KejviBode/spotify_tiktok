@@ -250,7 +250,7 @@ def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> 
     return unmatched_tiktok_songs
 
 
-def match_old_tracks_and_artists(old_tracks: dict, old_artists, new_tracks: list[dict]) -> list:
+def match_old_tracks_and_artists(old_tracks: dict, old_artists, new_tracks: list[dict]) -> list[dict]:
     '''
     Matches the previous days data with today's extracted data and returns
     a list of tracks that weren't there yesterday
