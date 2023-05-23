@@ -9,12 +9,14 @@ def get_db_connection(long_term: bool):
     """Connects to the database"""
     if long_term == True:
         db_name = "DB_LONG_TERM_NAME"
+        db_host = "DB_LONG_TERM_HOST"
     else:
         db_name = "DB_NAME"
+        db_host = "DB_HOST"
     try:
         conn = psycopg2.connect(
             user=os.environ["DB_USER"],
-            host=os.environ["DB_HOST"],
+            host=os.environ[db_host],
             database=os.environ[db_name],
             password=os.environ['DB_PASSWORD'],
             port=os.environ['DB_PORT']
