@@ -197,7 +197,7 @@ def handler(event=None, context=None):
         print(f"Run time: {PROCESS}")
         return {"status_code": 200,
                 "message": "Success!",
-                "report_event": event
+                "step_func_status": event["message"]
                 }
     except Exception as err:
         END = datetime.now()
@@ -206,7 +206,8 @@ def handler(event=None, context=None):
         print("Error")
         return {"status code": "400",
                 "message": err,
-                "report_event": event
+                "report_event": event,
+                "step_func_status": event["message"]
                 }
 
 
