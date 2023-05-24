@@ -138,6 +138,7 @@ def load_tiktok_track_views_data(short_conn: connection, long_conn: connection):
                  item["tiktok_track_views_in_hundred_thousands"],
                  item["recorded_at"])for item in result]
         execute_values(cur, sql_query, vals)
+        long_conn.commit()
     
 
 def load_tiktok_artist_views_data(short_conn: connection, long_conn: connection):
@@ -153,6 +154,7 @@ def load_tiktok_artist_views_data(short_conn: connection, long_conn: connection)
                  item["tiktok_track_views_in_hundred_thousands"],
                  item["recorded_at"])for item in result]
         execute_values(cur, sql_query, vals)
+        long_conn.commit()
 
 
 
