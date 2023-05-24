@@ -1,10 +1,13 @@
 DROP TABLE IF EXISTS artist_popularity;
 DROP TABLE IF EXISTS artist_genre;
 DROP TABLE IF EXISTS track_popularity;
+DROP TABLE IF EXISTS tiktok_track_views;
+DROP TABLE IF EXISTS tiktok_artist_views;
 DROP TABLE IF EXISTS track_artist;
 DROP TABLE IF EXISTS artist;
 DROP TABLE IF EXISTS genre;
 DROP TABLE IF EXISTS track;
+
 
 CREATE TABLE IF NOT EXISTS track (
     track_spotify_id VARCHAR(200) NOT NULL,
