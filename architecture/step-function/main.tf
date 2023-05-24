@@ -196,7 +196,7 @@ resource "aws_lambda_function" "spotify-tiktok-report" {
 
 # sns topic stuff
 resource "aws_sns_topic" "topic" {
-  name = "spotify-tiktok-tracks-remained-in-top-100"
+  name = "tiktok-tracks-remained-in-top-100"
 }
 
 resource "aws_sns_topic_subscription" "ilyas-target" {
@@ -214,6 +214,54 @@ resource "aws_sns_topic_subscription" "selvy-target" {
   protocol  = "email"
   endpoint  = "trainee.selvy.yasotharan@sigmalabs.co.uk"
 }
+# sns publish policy
+
+resource "aws_iam_role" "sns_publish_role" {
+  name = "example-role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "states.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_policy" "sns_publish_policy" {
+  name        = "sns-publish-policy"
+  description = "Allows publishing messages to the SNS topic"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sns:Publish"
+      ],
+      "Resource": [
+        "${aws_sns_topic.topic.arn}"
+      ]
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "sns_publish_attachment" {
+  policy_arn = aws_iam_policy.sns_publish_policy.arn
+  role       = aws_iam_role.sns_publish_role.name
+}
+
 
 # step-function stuff
 resource "aws_sfn_state_machine" "sfn_state_machine" {
@@ -225,11 +273,6 @@ resource "aws_sfn_state_machine" "sfn_state_machine" {
     "Comment": "Invoke AWS Lambda from AWS Step Functions with Terraform",
     "StartAt": "Report",
     "States": {
-      "Report": {
-        "Type": "Task",
-        "Resource": "${aws_lambda_function.spotify-tiktok-report.arn}",
-        "Next" : "Store"
-      },
       "Store": {
         "Type": "Task",
         "Resource": "${aws_lambda_function.spotify-tiktok-storage.arn}",
@@ -238,12 +281,31 @@ resource "aws_sfn_state_machine" "sfn_state_machine" {
       "Extract": {
         "Type": "Task",
         "Resource": "${aws_lambda_function.spotify-tiktok-extract.arn}",
+        "Next": "Report"
+      },
+      "Report": {
+        "Type": "Task",
+        "Resource": "${aws_lambda_function.spotify-tiktok-report.arn}",
+        "Next" : "SNS Publish"
+      },
+      "Update": {
+        "Type": "Task",
+        "Resource": "${}",
+        "Next" : "SNS Publish"
+      },
+      "SNS Publish": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "Message.$": "$"
+        },
         "End": true
       }
     }
   }
   EOF
 }
+
 
 # Creating iam role to run lambda function
 resource "aws_iam_role" "step_function_role" {
