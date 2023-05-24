@@ -118,10 +118,11 @@ def load_tiktok_artist_data(artist_url_soup: BeautifulSoup) -> list:
     if artist_url_soup is None:
         return None
     try:
-        followers = artist_url_soup.find("strong",{"title":"Followers"}).contents[0]
+        followers = artist_url_soup.find(
+            "strong", {"title": "Followers"}).contents[0]
         follower_count = check_metric(followers)
         if follower_count is None:
-            follower_count = int(followers.replace(',',''))
+            follower_count = int(followers.replace(',', ''))
     except:
         follower_count = None
     try:
@@ -132,7 +133,7 @@ def load_tiktok_artist_data(artist_url_soup: BeautifulSoup) -> list:
             like_count = int(likes.replace(',', ''))
     except:
         like_count = None
-    return {"tiktok_follower_count":follower_count, "tiktok_like_count":like_count}
+    return {"tiktok_follower_count": follower_count, "tiktok_like_count": like_count}
 
 
 def get_db_artists(conn: connection) -> list[dict]:
@@ -142,6 +143,7 @@ def get_db_artists(conn: connection) -> list[dict]:
         cur.execute(sql_query)
         result = cur.fetchall()
     return result
+
 
 def enrich_artist_data(db_artists: list[dict]) -> list[tuple]:
     tt_artist_views = []
@@ -153,9 +155,10 @@ def enrich_artist_data(db_artists: list[dict]) -> list[tuple]:
                 (artist["spotify_name"], None, None))
         else:
             tt_artist_views.append((artist["artist_spotify_id"],
-                                    artist_views["tiktok_follower_count"], 
+                                    artist_views["tiktok_follower_count"],
                                     artist_views["tiktok_like_count"]))
     return tt_artist_views
+
 
 def add_artist_views_to_db(enriched_artist_data: list[tuple], conn: connection):
     sql_query = "INSERT INTO tiktok_artist_views (artist_spotify_id, \
@@ -166,7 +169,7 @@ def add_artist_views_to_db(enriched_artist_data: list[tuple], conn: connection):
     return None
 
 
-def handler(event = None, context = None):
+def handler(event=None, context=None):
     START = datetime.now()
     try:
         load_dotenv()
@@ -193,13 +196,18 @@ def handler(event = None, context = None):
         PROCESS = END - START
         print(f"Run time: {PROCESS}")
         return {"status_code": 200,
-                "message": "Success!"}
+                "message": "Success!",
+                "report_event": event
+                }
     except Exception as err:
         END = datetime.now()
         PROCESS = END - START
         print(f"Run time: {PROCESS}")
         print("Error")
-        return {"status code": "400", "message": err}
+        return {"status code": "400",
+                "message": err,
+                "report_event": event
+                }
 
 
 if __name__ == "__main__":
