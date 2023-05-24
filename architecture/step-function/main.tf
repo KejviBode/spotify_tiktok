@@ -217,7 +217,7 @@ resource "aws_sns_topic_subscription" "selvy-target" {
 # sns publish policy
 
 resource "aws_iam_role" "sns_publish_role" {
-  name = "example-role"
+  name = "spotify-tiktok-sns-role"
 
   assume_role_policy = <<EOF
 {
@@ -297,6 +297,7 @@ resource "aws_sfn_state_machine" "sfn_state_machine" {
         "Type": "Task",
         "Resource": "arn:aws:states:::sns:publish",
         "Parameters": {
+          "TopicArn": "${aws_sns_topic.topic.arn}",
           "Message.$": "$"
         },
         "End": true
