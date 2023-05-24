@@ -1,0 +1,5 @@
+python-dotenv
+requests
+psycopg2-binary
+bs4
+urllib3==1.26.6
