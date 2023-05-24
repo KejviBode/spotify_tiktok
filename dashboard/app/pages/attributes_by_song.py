@@ -21,15 +21,16 @@ layout = html.Main([html.Div(style={"margin-top": "100px"}),
 def song_attribute_bar_chart(user_input):
     if user_input is None:
         fig = px.bar()
+        fig.update_layout(xaxis_title="Track Attributes", yaxis_title="Value", title="Please choose a song")
         fig.update_yaxes(range=[0, 1])
         return fig
     last_dash_index = user_input.rfind("-")
     song_name = user_input[:last_dash_index].strip()
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
-        sql_query = f"SELECT track_danceability, track_energy, track_valence, \
+        sql_query = "SELECT track_danceability, track_energy, track_valence, \
             track_tempo, track_speechiness FROM track \
-                WHERE track_name = '{song_name}'"
-        cur.execute(sql_query)
+                WHERE track_name = %s"
+        cur.execute(sql_query, (song_name,))
         results = cur.fetchone()
 
     graph_dict = {}
@@ -47,7 +48,7 @@ def song_attribute_bar_chart(user_input):
 
     fig = px.bar(x=attribute_names, y=attribute_values)
 
-    fig = px.bar(x=attribute_names, y=attribute_values, labels={'x': 'Attribute', 'y': 'Value'},
+    fig = px.bar(x=attribute_names, y=attribute_values, labels={'x': 'Track Attributes', 'y': 'Value'},
                  title=f'Song Attributes: {user_input}')
     fig.update_yaxes(range=[0, 1])
     return fig

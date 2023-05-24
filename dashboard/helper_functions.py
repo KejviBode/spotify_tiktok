@@ -5,20 +5,25 @@ from psycopg2.extras import RealDictCursor
 import plotly.express as px
 import pandas as pd
 
-def get_db_connection():
+def get_db_connection(long_term: bool=False):
     """Connects to the database"""
+    if long_term == True:
+        db_name = "DB_LONG_TERM_NAME"
+        db_host = "DB_LONG_TERM_HOST"
+    else:
+        db_name = "DB_NAME"
+        db_host = "DB_HOST"
     try:
         conn = psycopg2.connect(
-            user = os.getenv("DB_USER"),
-            password = os.getenv("DB_PASSWORD"),
-            host = os.getenv("DB_HOST"),
-            port = os.getenv("DB_PORT"),
-            database = os.getenv("DB_NAME")
-            )
-        print("Connected")
+            user=os.environ["DB_USER"],
+            host=os.environ[db_host],
+            database=os.environ[db_name],
+            password=os.environ['DB_PASSWORD'],
+            port=os.environ['DB_PORT']
+        )
         return conn
-    except Exception as e:
-        print(e)
+    except Exception as err:
+        print(err)
         print("Error connecting to database.")
 
 
@@ -52,6 +57,7 @@ def get_top_ten(chart_type: str, conn) -> list[dict]:
 
 load_dotenv()
 conn = get_db_connection()
+long_conn = get_db_connection(True)
 
 def get_all_current_songs(conn):
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -65,3 +71,5 @@ def get_all_current_songs(conn):
         for item in result:
             result_list.append(f"{item['track_name']} - {item['artists']}")
     return result_list
+
+
