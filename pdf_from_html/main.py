@@ -117,145 +117,161 @@ def event_to_dataframe(event: dict):
 
 def handler(event=None, context=None):
     """Handler function for report generation and SES"""
-    #  prerequisites
-    load_dotenv()
-    conn = get_db_connection()
-    date = dt.datetime.now()
-    date_str = f"{date.strftime('%Y')}/{date.strftime('%m')}/{date.strftime('%d')}"
+    try:
+        #  prerequisites
+        load_dotenv()
+        conn = get_db_connection()
+        date = dt.datetime.now()
+        date_str = f"{date.strftime('%Y')}/{date.strftime('%m')}/{date.strftime('%d')}"
 
-    # get comparison_tracks from event
-    new_tracks_and_artists = event_to_dataframe(event)
-    print("Extracted new tracks and artists from event")
-    # create dataframes
-    df_both = get_average_attributes(
-        conn, in_spotify=True, in_tiktok=True)
-    df_tiktok = get_average_attributes(conn, in_spotify=False, in_tiktok=True)
-    print("Created attribute dataframes")
-    #  create plotly graphs
-    fig_tiktok = px.bar(df_tiktok.melt(), x='variable',
-                        y='value', title='Avg attributes for TikTok top 100')
-    fig_tiktok.update_yaxes(range=[0, 1])
-    fig_tiktok_base64 = base64.b64encode(
-        fig_tiktok.to_image()).decode("utf-8")
+        # get comparison_tracks from event
+        new_tracks_and_artists = event_to_dataframe(event)
+        print("Extracted new tracks and artists from event")
+        # create dataframes
+        df_both = get_average_attributes(
+            conn, in_spotify=True, in_tiktok=True)
+        df_tiktok = get_average_attributes(
+            conn, in_spotify=False, in_tiktok=True)
+        print("Created attribute dataframes")
+        #  create plotly graphs
+        fig_tiktok = px.bar(df_tiktok.melt(), x='variable',
+                            y='value', title='Avg attributes for TikTok top 100')
+        fig_tiktok.update_yaxes(range=[0, 1])
+        fig_tiktok_base64 = base64.b64encode(
+            fig_tiktok.to_image()).decode("utf-8")
 
-    fig_both = px.bar(df_both.melt(), x='variable',
-                      y='value', title='Avg attributes for Spotify & TikTok top 100')
-    fig_both.update_yaxes(range=[0, 1])
-    fig_both_base64 = base64.b64encode(fig_both.to_image()).decode("utf-8")
-    print("Created attribute px plots")
-    # Generate the HTML code
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Spotify & TikTok Report</title>
-        <style>
-            body {{
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            }}
-            .container {{
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            }}
-            header {{
-            text-align: center;
-            margin-bottom: 20px;
-            }}
-            header img {{
-            width: 300px;
-            height: auto;
-            }}
-            h1 {{
-            font-size: 24px;
-            margin-bottom: 10px;
-            }}
-            .graph-container {{
-            display: flex;
-            margin-bottom: 20px;
-            margin: auto;
-            }}
-            .graph {{
-            flex: 1;
-            border: 1px solid #ccc;
-            padding: 1.5px;
-            }}
-            table {{
-            border-collapse: collapse;
-            width: 100%;
-            }}
-            th, td {{
-            border: 1px solid #ccc;
-            padding: 8px;
-            text-align: left;
-            }}
-            th {{
-            background-color: #f2f2f2;
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <header>
-                <img src="./spotify.png" alt="Logo">
-                <h1>{f"Spotify & TikTok Report : {date_str}"}</h1>
-            </header>
-            <div class="graph-container">
-                <div class="graph">
-                <img src="data:image/png;base64,{fig_tiktok_base64}" alt="Spotify Graph">
+        fig_both = px.bar(df_both.melt(), x='variable',
+                          y='value', title='Avg attributes for Spotify & TikTok top 100')
+        fig_both.update_yaxes(range=[0, 1])
+        fig_both_base64 = base64.b64encode(fig_both.to_image()).decode("utf-8")
+        print("Created attribute px plots")
+        # Generate the HTML code
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Spotify & TikTok Report</title>
+            <style>
+                body {{
+                font-family: Arial, sans-serif;
+                margin: 0;
+                padding: 0;
+                }}
+                .container {{
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                }}
+                header {{
+                text-align: center;
+                margin-bottom: 20px;
+                }}
+                header img {{
+                width: 300px;
+                height: auto;
+                }}
+                h1 {{
+                font-size: 24px;
+                margin-bottom: 10px;
+                }}
+                .graph-container {{
+                display: flex;
+                margin-bottom: 20px;
+                margin: auto;
+                }}
+                .graph {{
+                flex: 1;
+                border: 1px solid #ccc;
+                padding: 1.5px;
+                }}
+                table {{
+                border-collapse: collapse;
+                width: 100%;
+                }}
+                th, td {{
+                border: 1px solid #ccc;
+                padding: 8px;
+                text-align: left;
+                }}
+                th {{
+                background-color: #f2f2f2;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <header>
+                    <img src="./spotify.png" alt="Logo">
+                    <h1>{f"Spotify & TikTok Report : {date_str}"}</h1>
+                </header>
+                <div class="graph-container">
+                    <div class="graph">
+                    <img src="data:image/png;base64,{fig_tiktok_base64}" alt="Spotify Graph">
+                    </div>
+                    <div class="graph">
+                    <img src="data:image/png;base64,{fig_both_base64}" alt="Both Graph">
+                    </div>
                 </div>
-                <div class="graph">
-                <img src="data:image/png;base64,{fig_both_base64}" alt="Both Graph">
+                <div class="table-container">
+                    <table id="table1">
+                    <thead>
+                        <tr>
+                            <th>Top 10 tracks and respective artists new to TikTok charts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {new_tracks_and_artists.to_html()}
+                    </tbody>
+                    </table>
                 </div>
             </div>
-            <div class="table-container">
-                <table id="table1">
-                <thead>
-                    <tr>
-                        <th>Top 10 tracks and respective artists new to TikTok charts</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {new_tracks_and_artists.to_html()}
-                </tbody>
-                </table>
-            </div>
-        </div>
-    </body>
-    </html>
-        """
+        </body>
+        </html>
+            """
 
-    # export to pdf and save to pdf
-    with open("/tmp/report.pdf", "w+b") as result_file:
-        # convert HTML to PDF
-        pisa_status = pisa.CreatePDF(
-            html_content,
-            dest=result_file)
-    print(pisa_status)
-    print("Converted html content to pdf")
-    #  push to S3
-    bucket_name = 'c7-spotify-tiktok-output'
-    session = boto3.Session(
-        aws_access_key_id=os.environ["ACCESS_KEY_ID"],
-        aws_secret_access_key=os.environ["SECRET_KEY_ID"])
-    s3 = session.client('s3')
+        # export to pdf and save to pdf
+        with open("/tmp/report.pdf", "w+b") as result_file:
+            # convert HTML to PDF
+            pisa_status = pisa.CreatePDF(
+                html_content,
+                dest=result_file)
+        print(pisa_status)
+        print("Converted html content to pdf")
+        #  push to S3
+        bucket_name = 'c7-spotify-tiktok-output'
+        session = boto3.Session(
+            aws_access_key_id=os.environ["ACCESS_KEY_ID"],
+            aws_secret_access_key=os.environ["SECRET_KEY_ID"])
+        s3 = session.client('s3')
 
-    date = dt.datetime.now()
-    date_str = f"{date.strftime('%Y')}/{date.strftime('%m')}/{date.strftime('%d')}"
+        date = dt.datetime.now()
+        date_str = f"{date.strftime('%Y')}/{date.strftime('%m')}/{date.strftime('%d')}"
 
-    file = date_str + '/report.pdf'
-    s3.put_object(Body="/tmp/report.pdf", Bucket=bucket_name, Key=file)
-    print("PDF uploaded to S3")
+        file = date_str + '/report.pdf'
+        s3.put_object(Body="/tmp/report.pdf", Bucket=bucket_name, Key=file)
+        print("PDF uploaded to S3")
 
-    # send pdf as email
-    sender_email = "trainee.ilyas.abdulkadir@sigmalabs.co.uk"
-    receiver_emails = ["trainee.ilyas.abdulkadir@sigmalabs.co.uk"]
-    subject = "Spotify & Tiktok Daily Report"
-    pdf_file_path = "/tmp/report.pdf"
+        # send pdf as email
+        sender_email = "trainee.ilyas.abdulkadir@sigmalabs.co.uk"
+        receiver_emails = ["trainee.ilyas.abdulkadir@sigmalabs.co.uk"]
+        subject = "Spotify & Tiktok Daily Report"
+        pdf_file_path = "/tmp/report.pdf"
 
-    send_email_with_pdf(sender_email, receiver_emails, subject, pdf_file_path)
+        send_email_with_pdf(sender_email, receiver_emails,
+                            subject, pdf_file_path)
+        if event.get("status_code") != 200:
+            message = "LambdaError: Check lambda logs to debug"
+        else:
+            message = "Success"
+        return {
+            "status_code": 200,
+            "message": message
+        }
+    except Exception as err:
+        return {
+            "status_code": 400,
+            "message": err.args[0]
+        }
 
 
 if __name__ == "__main__":
