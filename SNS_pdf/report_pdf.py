@@ -28,11 +28,11 @@ def get_db_connection() -> connection:
 
 
 def get_average_attributes(conn: connection, in_spotify: bool, in_tiktok: bool) -> pd.DataFrame:
-    query = """SELECT AVG(track_danceability) AS avg_danceability,
-                AVG(track_energy) AS avg_energy,
-                AVG(track_valence) AS avg_valence,
-                AVG(track_tempo) AS avg_tempo,
-                AVG(track_speechiness) AS avg_speechiness
+    query = """SELECT AVG(track_danceability) AS Danceability,
+                AVG(track_energy) AS Energy,
+                AVG(track_valence) AS Valence,
+                AVG((track_tempo - 50)/200) AS Tempo,
+                AVG(track_speechiness) AS Speechiness
                 FROM track
                 WHERE in_spotify = %s AND in_tiktok = %s"""
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -50,7 +50,8 @@ def handler(event=None, context=None):
         # dfs
         df_spotify = get_average_attributes(
             conn, in_spotify=True, in_tiktok=False)
-        df_both = get_average_attributes(conn, in_spotify=True, in_tiktok=True)
+        df_both = get_average_attributes(
+            conn, in_spotify=False, in_tiktok=True)
 
         # Adding graphs to pdf
         with io.BytesIO() as output:
@@ -69,6 +70,7 @@ def handler(event=None, context=None):
             data = output.getvalue()
 
         bucket_name = 'c7-spotify-tiktok-output'
+
         session = boto3.Session(
             aws_access_key_id=os.environ["ACCESS_KEY_ID"],
             aws_secret_access_key=os.environ["SECRET_KEY_ID"])
@@ -76,6 +78,7 @@ def handler(event=None, context=None):
 
         date = dt.datetime.now()
         date_str = f"{date.strftime('%Y')}/{date.strftime('%m')}/{date.strftime('%d')}"
+
         file = date_str + '/report.pdf'
         s3.put_object(Body=data, Bucket=bucket_name, Key=file)
         return {

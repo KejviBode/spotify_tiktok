@@ -39,10 +39,10 @@ def load_track_data(short_conn: connection, long_conn: connection):
             track_energy, track_valence, track_tempo, track_speechiness, in_spotify, \
                 in_tiktok, tiktok_rank, spotify_rank, recorded_at) \
                     VALUES %s ON CONFLICT DO NOTHING"
-        vals = [(track["track_spotify_id"], track["track_name"], track["track_danceability"], \
-                    track["track_energy"], track["track_valence"], track["track_tempo"], track["track_speechiness"], \
-                    track["in_spotify"], track["in_tiktok"], track["tiktok_rank"], track["spotify_rank"], \
-                    track["created_at"]) for track in result]
+        vals = [(track["track_spotify_id"], track["track_name"], track["track_danceability"],
+                 track["track_energy"], track["track_valence"], track["track_tempo"], track["track_speechiness"],
+                 track["in_spotify"], track["in_tiktok"], track["tiktok_rank"], track["spotify_rank"],
+                 track["created_at"]) for track in result]
         execute_values(cur, sql_query, vals)
         long_conn.commit()
     return result
@@ -62,8 +62,8 @@ def load_artist_data(short_conn: connection, long_conn: connection):
     with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "INSERT INTO artist (artist_spotify_id, spotify_name, artist_genres) \
                     VALUES %s ON CONFLICT DO NOTHING"
-        vals = [(artist["artist_spotify_id"], artist["spotify_name"], artist["genre_names"]) \
-                    for artist in result]
+        vals = [(artist["artist_spotify_id"], artist["spotify_name"], artist["genre_names"])
+                for artist in result]
         execute_values(cur, sql_query, vals)
         long_conn.commit()
     return result
@@ -86,7 +86,7 @@ def load_track_artist_data(short_conn: connection, long_conn: connection):
                             WHERE track_spotify_id = %s AND artist_spotify_id = %s) \
                         ON CONFLICT DO NOTHING"
 
-            vals = (item["track_spotify_id"], item["artist_spotify_id"], item["track_spotify_id"], \
+            vals = (item["track_spotify_id"], item["artist_spotify_id"], item["track_spotify_id"],
                     item["artist_spotify_id"])
             cur.execute(sql_query, vals)
             long_conn.commit()
@@ -102,7 +102,7 @@ def load_track_popularity_data(short_conn: connection, long_conn: connection):
     with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "INSERT INTO track_popularity (track_spotify_id, popularity_score, created_at) \
                     VALUES %s ON CONFLICT DO NOTHING"
-        vals = [(item["track_spotify_id"], item["popularity_score"], item["created_at"]) \
+        vals = [(item["track_spotify_id"], item["popularity_score"], item["created_at"])
                 for item in result]
         execute_values(cur, sql_query, vals)
         long_conn.commit()
@@ -119,7 +119,7 @@ def load_artist_popularity_data(short_conn: connection, long_conn: connection):
         sql_query = "INSERT INTO artist_popularity (artist_spotify_id, artist_popularity, \
                       follower_count, created_at) \
                     VALUES %s ON CONFLICT DO NOTHING"
-        vals = [(item["artist_spotify_id"], item["artist_popularity"], item["follower_count"], \
+        vals = [(item["artist_spotify_id"], item["artist_popularity"], item["follower_count"],
                  item["created_at"]) for item in result]
         execute_values(cur, sql_query, vals)
         long_conn.commit()
@@ -127,7 +127,7 @@ def load_artist_popularity_data(short_conn: connection, long_conn: connection):
 
 def empty_short_term_tables(short_conn: connection):
     """Removes all the short term data from the database"""
-    tables = ["track_popularity", "artist_popularity", "artist_genre", "track_artist", \
+    tables = ["track_popularity", "artist_popularity", "artist_genre", "track_artist",
               "genre", "track", "artist"]
     with short_conn, short_conn.cursor(cursor_factory=RealDictCursor) as cur:
         for table in tables:
@@ -136,25 +136,31 @@ def empty_short_term_tables(short_conn: connection):
 
 
 def handler(event=None, context=None):
-    load_dotenv()
-    short_conn = get_db_connection(False)
-    long_conn = get_db_connection(True)
-    old_track_data = load_track_data(short_conn, long_conn)
-    print("Track data loaded")
-    old_artist_data = load_artist_data(short_conn, long_conn)
-    print("Artist data loaded")
-    load_track_artist_data(short_conn, long_conn)
-    print("Track-artist data loaded")
-    load_track_popularity_data(short_conn, long_conn)
-    print("Track popularity data loaded")
-    load_artist_popularity_data(short_conn, long_conn)
-    print("Artist popularity data loaded")
-    empty_short_term_tables(short_conn)
-    print("Tables emptied")
-    return {"status_code" : 200,
-            "message" : "Success!",
-            "old_tracks" : [track["track_name"] for track in old_track_data],
-            "old_artists": [artist["spotify_name"] for artist in old_artist_data]}
+    try:
+        load_dotenv()
+        short_conn = get_db_connection(False)
+        long_conn = get_db_connection(True)
+        old_track_data = load_track_data(short_conn, long_conn)
+        print("Track data loaded")
+        old_artist_data = load_artist_data(short_conn, long_conn)
+        print("Artist data loaded")
+        load_track_artist_data(short_conn, long_conn)
+        print("Track-artist data loaded")
+        load_track_popularity_data(short_conn, long_conn)
+        print("Track popularity data loaded")
+        load_artist_popularity_data(short_conn, long_conn)
+        print("Artist popularity data loaded")
+        empty_short_term_tables(short_conn)
+        print("Tables emptied")
+        return {"status_code": 200,
+                "message": "Success!",
+                "old_tracks": [track["track_name"] for track in old_track_data],
+                "old_artists": [artist["spotify_name"] for artist in old_artist_data]}
+    except Exception as err:
+        return {"status_code": 400,
+                "message": err.args[0],
+                "old_tracks": "Failed to extract old tracks",
+                "old_artists": "Failed to extract old artists"}
 
 
 if __name__ == "__main__":
