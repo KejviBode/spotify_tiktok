@@ -6,14 +6,24 @@ import pandas as pd
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from helper_functions import conn
+from helper_functions import conn, danceability, energy, valence, tempo, speechiness
 
 register_page(__name__, path="/average_song_attributes")
 
 layout = html.Main([html.Div(style={"margin-top": "100px"}),
     html.H1("Average Song Attributes", style={'color': 'Black'}),
                     dcc.Dropdown(["All", "Spotify", "Tiktok"], id="attribute-dropdown", placeholder="Choose One"),
-                    dcc.Graph(id="attribute-graph")])
+                    dcc.Graph(id="attribute-graph"),
+    html.Div([html.H2("Track Attributes Key:"),
+        html.Ul(
+            children=[
+                html.Li([html.Strong("Danceability"), " - ", danceability], style={'margin-bottom': '5px'}),
+                html.Li([html.Strong("Energy"), " - ", energy], style={'margin-bottom': '5px'}),
+                html.Li([html.Strong("Valence"), " - ", valence], style={'margin-bottom': '5px'}),
+                html.Li([html.Strong("Tempo"), " - ", tempo], style={'margin-bottom': '5px'}),
+                html.Li([html.Strong("Speechiness"), " - ", speechiness], style={'margin-bottom': '5px'})
+            ]
+        )], style={'margin-left': '80px', 'margin-right': '80px'})])
 
 
 @callback(Output(component_id="attribute-graph", component_property="figure"),

@@ -4,6 +4,19 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import pandas as pd
 
+danceability = 'describes how suitable a track is for dancing based on a combination of musical \
+    elements including tempo, rhythm stability, beat strength, and overall regularity, with 0.0 being the \
+        least danceable and 1.0 being the most.'
+energy = 'represents a measure of intensity and activity (i.e. how fast and loud a track is), with 0.0 being \
+    the least energetic and 1.0 being the most.'
+valence = 'describes the musical positiveness conveyed by a track with 0.0 being a track that sounds more positive \
+    (i.e. happy, cheerful, euphoric) and 1.0 being a track that sounds more negative (i.e. sad, depressed, angry).'
+tempo = 'the overall estimated tempo (i.e. speed/pace) of a track, with 0.0 being 50BPM (Beats Per Minute) and 1.0 \
+    being 250BPM.'
+speechiness = 'measure the proportion of the track that is filled with spoken word, with 0.66-1.0 being tracks that \
+    are almost all spoken word, 0.33-0.66 being tracks that are a mixture of speech and music, and below 0.33 being \
+        tracks with almost no speech.'
+
 def get_db_connection(long_term: bool=False):
     '''
     Connects to the database

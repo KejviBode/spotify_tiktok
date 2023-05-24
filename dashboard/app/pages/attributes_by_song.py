@@ -5,16 +5,28 @@ import plotly.graph_objects as go
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from helper_functions import conn, get_all_current_songs
+from helper_functions import conn, get_all_current_songs, danceability, energy, valence, tempo, speechiness
 
 register_page(__name__, path="/attributes_by_song")
 
 songs = get_all_current_songs(conn)
 
+
 layout = html.Main([html.Div(style={"margin-top": "100px"}),
     html.H1("Attributes by song", style={'color': 'Black'}),
                     dcc.Dropdown(options=[{'label': song, 'value': song} for song in songs], id="song-dropdown", placeholder="Choose One"),
-                    dcc.Graph(id="song-attribute-graph")])
+                    dcc.Graph(id="song-attribute-graph"),
+    html.Div([html.H2("Track Attributes Key:"),
+        html.Ul(
+            children=[
+                html.Li([html.Strong("Danceability"), " - ", danceability], style={'margin-bottom': '5px'}),
+                html.Li([html.Strong("Energy"), " - ", energy], style={'margin-bottom': '5px'}),
+                html.Li([html.Strong("Valence"), " - ", valence], style={'margin-bottom': '5px'}),
+                html.Li([html.Strong("Tempo"), " - ", tempo], style={'margin-bottom': '5px'}),
+                html.Li([html.Strong("Speechiness"), " - ", speechiness], style={'margin-bottom': '5px'})
+            ]
+        )], style={'margin-left': '80px', 'margin-right': '80px'})
+    ])
 
 @callback(Output(component_id="song-attribute-graph", component_property="figure"),
           Input("song-dropdown", "value"))
