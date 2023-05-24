@@ -1,9 +1,9 @@
 from os import path
 from dash import Dash, register_page, html, page_container, callback, dcc, Input, Output, dash_table
+import plotly.express as px
+import plotly.graph_objects as go
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import plotly.express as px
-import pandas as pd
 
 from helper_functions import conn, get_all_current_songs
 
@@ -19,9 +19,12 @@ layout = html.Main([html.Div(style={"margin-top": "100px"}),
 @callback(Output(component_id="song-attribute-graph", component_property="figure"),
           Input("song-dropdown", "value"))
 def song_attribute_bar_chart(user_input):
+    '''
+    Creates bar graph of attributes for song from user input
+    '''
     if user_input is None:
         fig = px.bar()
-        fig.update_layout(xaxis_title="Track Attributes", yaxis_title="Value", title="Please choose a song")
+        fig.update_layout(xaxis_title="Track Attributes", yaxis_title="Value", title="Please choose a song", plot_bgcolor='#bfbdbd')
         fig.update_yaxes(range=[0, 1])
         return fig
     last_dash_index = user_input.rfind("-")
@@ -45,10 +48,13 @@ def song_attribute_bar_chart(user_input):
 
     attribute_names = ['Danceability', 'Energy', 'Valence', 'Tempo', 'Speechiness']
     attribute_values = [graph_dict[attr] for attr in attribute_names]
+    colours = ['#1ed760', '#000000', '#00f2ea', '#ffffff', '#ff0050']
 
-    fig = px.bar(x=attribute_names, y=attribute_values)
 
-    fig = px.bar(x=attribute_names, y=attribute_values, labels={'x': 'Track Attributes', 'y': 'Value'},
-                 title=f'Song Attributes: {user_input}')
+    fig = go.Figure(data=[
+    go.Bar(x=attribute_names, y=attribute_values, marker=dict(color=colours))])
+    fig.update_layout(xaxis=dict(title='Track Attributes'), yaxis=dict(title='Value'), \
+                      title=f'Song Attributes: {user_input}', showlegend=False, plot_bgcolor='#bfbdbd')
+
     fig.update_yaxes(range=[0, 1])
     return fig

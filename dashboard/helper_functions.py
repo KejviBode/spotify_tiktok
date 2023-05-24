@@ -2,11 +2,12 @@ from dotenv import load_dotenv
 import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import plotly.express as px
 import pandas as pd
 
 def get_db_connection(long_term: bool=False):
-    """Connects to the database"""
+    '''
+    Connects to the database
+    '''
     if long_term == True:
         db_name = "DB_LONG_TERM_NAME"
         db_host = "DB_LONG_TERM_HOST"
@@ -28,7 +29,9 @@ def get_db_connection(long_term: bool=False):
 
 
 def get_top_ten(chart_type: str, conn) -> list[dict]:
-    """Finds top 10 entries for Spotify or TikTok and returns a list of dicts"""
+    '''
+    Finds top 10 entries for Spotify or TikTok and returns a list of dicts
+    '''
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(f"""
             SELECT t.track_name, t.spotify_rank, t.tiktok_rank, ARRAY_AGG(a.spotify_name) AS spotify_names
@@ -59,7 +62,10 @@ load_dotenv()
 conn = get_db_connection()
 long_conn = get_db_connection(True)
 
-def get_all_current_songs(conn):
+def get_all_current_songs(conn) -> list:
+    '''
+    Gets a list of all the current songs from the track table
+    '''
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "Select track.track_name, STRING_AGG(artist.spotify_name, ', ') AS artists FROM track \
             JOIN track_artist ON track.track_spotify_id = track_artist.track_spotify_id \

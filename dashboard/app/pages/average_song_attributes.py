@@ -1,9 +1,10 @@
 from os import path
 from dash import Dash, register_page, html, page_container, callback, dcc, Input, Output, dash_table
+import plotly.express as px
+import plotly.graph_objects as go
+import pandas as pd
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import plotly.express as px
-import pandas as pd
 
 from helper_functions import conn
 
@@ -18,6 +19,9 @@ layout = html.Main([html.Div(style={"margin-top": "100px"}),
 @callback(Output(component_id="attribute-graph", component_property="figure"),
           Input("attribute-dropdown", "value"))
 def attribute_bar_chart(user_input):
+    '''
+    Creates a bar chart of the average attributes across all songs
+    '''
     with conn, conn.cursor() as cur:
         if user_input == "All" or user_input == None:
             sql_input = '''
@@ -110,7 +114,23 @@ def attribute_bar_chart(user_input):
             graph_dict["Tempo"] = (results[1][5] + results[1][5])/2
             graph_dicts.append(graph_dict)
 
-        fig = px.bar(graph_dicts, x='name', y=['Danceability', 'Energy', 'Valence', 'Speechiness', 'Tempo'], barmode='group', title='Bar Chart')
-        fig.update_layout(xaxis_title="Track Attributes", yaxis_title="Value", title="", legend=dict(title='Attributes'))
-        fig.update_yaxes(range=[0, 1])
-        return fig
+        colours = ['#1ed760', '#000000', '#00f2ea', '#ffffff', '#ff0050']
+
+
+        fig_px = px.bar(graph_dicts, x='name', y=['Danceability', 'Energy', 'Valence', 'Speechiness', 'Tempo'], barmode='group', title='Bar Chart')
+        fig_px.update_layout(xaxis_title="Track Attributes", yaxis_title="Value", title="", legend=dict(title='Attributes'))
+        fig_px.update_yaxes(range=[0, 1])
+
+        fig_go = go.Figure(fig_px.to_dict())
+
+        for i, colour in enumerate(colours):
+            fig_go.data[i].marker.color = colour
+
+    fig_go.update_layout(
+        xaxis_title="Track Attributes",
+        yaxis_title="Value",
+        title="",
+        legend=dict(title='Attributes'),
+        plot_bgcolor='#bfbdbd'
+    )
+    return fig_go

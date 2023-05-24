@@ -18,6 +18,9 @@ layout = html.Main([html.Div(style={"margin-top": "100px"}),
 @callback(Output(component_id="pie-graph", component_property="figure"),
           Input("pie-dropdown", "value"))
 def pie_chart(user_input):
+    '''
+    Creates a pie chart of the songs in the Spotify chart, TikTok chart, and both charts
+    '''
     if user_input == "None" or user_input == None:
         with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             sql_query = 'SELECT \
