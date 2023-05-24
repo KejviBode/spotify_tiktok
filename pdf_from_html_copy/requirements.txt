@@ -1,8 +1,0 @@
-psycopg2-binary
-python-dotenv
-plotly
-pandas
-datetime
-boto3
-xhtml2pdf
-kaleido
