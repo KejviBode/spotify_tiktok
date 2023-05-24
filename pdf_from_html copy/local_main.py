@@ -44,17 +44,12 @@ def send_email_with_pdf(sender_email: str, receiver_emails: list, subject: str, 
     print(sender_email)
     print(receiver_emails)
     print(message.as_string())
-    try:
-        response = client.send_raw_email(
-            Source=sender_email,
-            Destinations=receiver_emails,
-            RawMessage={'Data': message.as_string()}
-        )
 
-        print(response)
-    except Exception as err:
-        print(err.args[0])
-        return err
+    response = client.send_raw_email(
+        Source=sender_email,
+        Destinations=receiver_emails,
+        RawMessage={'Data': message.as_string()}
+    )
 
 
 def get_db_connection() -> connection:
@@ -116,7 +111,8 @@ def event_to_dataframe(event: dict):
     return comparison_tracks
 
 
-def handler(event=None, context=None):
+if __name__ == "__main__":
+    event = None
     """Handler function for report generation and SES"""
     #  prerequisites
     load_dotenv()
@@ -229,7 +225,7 @@ def handler(event=None, context=None):
         """
 
     # export to pdf and save to pdf
-    with open("/tmp/report.pdf", "w+b") as result_file:
+    with open("report.pdf", "w+b") as result_file:
         # convert HTML to PDF
         pisa_status = pisa.CreatePDF(
             html_content,
@@ -254,10 +250,7 @@ def handler(event=None, context=None):
     sender_email = "trainee.ilyas.abdulkadir@sigmalabs.co.uk"
     receiver_emails = ["trainee.ilyas.abdulkadir@sigmalabs.co.uk"]
     subject = "Spotify & Tiktok Daily Report"
-    pdf_file_path = "/tmp/report.pdf"
+    pdf_file_path = "report.pdf"
 
     send_email_with_pdf(sender_email, receiver_emails, subject, pdf_file_path)
-
-
-if __name__ == "__main__":
-    handler()
+    print("Email sent")

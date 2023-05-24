@@ -48,7 +48,7 @@ def send_email_with_pdf(sender_email: str, receiver_emails: list, subject: str, 
         response = client.send_raw_email(
             Source=sender_email,
             Destinations=receiver_emails,
-            RawMessage={'Data': message.as_string()}
+            RawMessage={'Data': "test_string"}
         )
 
         print(response)
