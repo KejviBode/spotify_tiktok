@@ -9,6 +9,39 @@ import datetime as dt
 import boto3
 from xhtml2pdf import pisa
 import base64
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+
+
+def send_email_with_pdf(sender_email: str, receiver_emails: list, subject: str, pdf_file_path: str):
+    # Create a multipart message object
+    message = MIMEMultipart()
+    message["Subject"] = subject
+
+    with open(pdf_file_path, "rb") as attachment:
+        # Create a MIME base object
+        pdf_part = MIMEBase("application", "octet-stream")
+        pdf_part.set_payload(attachment.read())
+        encoders.encode_base64(pdf_part)
+        pdf_part.add_header(
+            "Content-Disposition",
+            f"attachment; filename= {pdf_file_path}",
+        )
+        message.attach(pdf_part)
+
+    # SES stuff
+    client = boto3.client(
+        service_name="ses",
+        region_name="eu-west-2",
+        aws_access_key_id=os.environ["ACCESS_KEY_ID"],
+        aws_secret_access_key=os.environ["SECRET_KEY_ID"]
+    )
+    response = client.send_raw_email(
+        Source=sender_email,
+        Destinations=receiver_emails,
+        RawMessage={'Data': message.as_string(), }
+    )
 
 
 def get_db_connection() -> connection:
@@ -72,9 +105,9 @@ if __name__ == "__main__":
 
     # Generate the HTML code
     html_content = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
+    <!DOCTYPE html>
+    <html>
+    <head>
         <title>Spotify & TikTok Report</title>
         <style>
             body {{
@@ -82,97 +115,86 @@ if __name__ == "__main__":
             margin: 0;
             padding: 0;
             }}
-
             .container {{
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             }}
-
             header {{
             text-align: center;
             margin-bottom: 20px;
             }}
-
             header img {{
             width: 300px;
             height: auto;
             }}
-
             h1 {{
             font-size: 24px;
             margin-bottom: 10px;
             }}
-
             .graph-container {{
             display: flex;
             margin-bottom: 20px;
             margin: auto;
             }}
-
             .graph {{
             flex: 1;
             border: 1px solid #ccc;
             padding: 1.5px;
             }}
-
             table {{
             border-collapse: collapse;
             width: 100%;
             }}
-
             th, td {{
             border: 1px solid #ccc;
             padding: 8px;
             text-align: left;
             }}
-
             th {{
             background-color: #f2f2f2;
             }}
         </style>
-        </head>
-        <body>
+    </head>
+    <body>
         <div class="container">
             <header>
-            <img src="./spotify.png" alt="Logo">
-            <h1>{f"Spotify & TikTok Report : {date_str}"}</h1>
+                <img src="./spotify.png" alt="Logo">
+                <h1>{f"Spotify & TikTok Report : {date_str}"}</h1>
             </header>
-
             <div class="graph-container">
-            <div class="graph">
+                <div class="graph">
                 <img src="data:image/png;base64,{fig_spotify_base64}" alt="Spotify Graph">
-            </div>
-            <div class="graph">
+                </div>
+                <div class="graph">
                 <img src="data:image/png;base64,{fig_both_base64}" alt="Both Graph">
+                </div>
             </div>
-            </div>
-
             <div class="table-container">
-            <table id="table1">
+                <table id="table1">
                 <thead>
-                <tr>
-                    <th>New artists</th>
-                </tr>
+                    <tr>
+                        <th>New artists</th>
+                    </tr>
                 </thead>
                 <tbody>
-                {test_names.to_html()}
+                    {test_names.to_html()}
                 </tbody>
-            </table>
-            <table id="table2">
+                </table>
+                <table id="table2">
                 <thead>
-                <tr>
-                    <th>New tracks</th>
-                </tr>
+                    <tr>
+                        <th>New tracks</th>
+                    </tr>
                 </thead>
                 <tbody>
-                {test_names.to_html()}
+                    {test_names.to_html()}
                 </tbody>
-            </table>
+                </table>
             </div>
         </div>
-        </body>
-        </html>
+    </body>
+    </html>
         """
 
    # Save the HTML code to a file
@@ -198,3 +220,11 @@ if __name__ == "__main__":
 
     file = date_str + '/report.pdf'
     s3.put_object(Body="./graph.html", Bucket=bucket_name, Key=file)
+
+    # send pdf as email
+    sender_email = "trainee.ilyas.abdulkadir@sigmalabs.co.uk"
+    receiver_emails = ["trainee.ilyas.abdulkadir@sigmalabs.co.uk"]
+    subject = "Spotify & Tiktok Daily Report"
+    pdf_file_path = "report.pdf"
+
+    send_email_with_pdf(sender_email, receiver_emails, subject, pdf_file_path)
