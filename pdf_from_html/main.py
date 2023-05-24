@@ -12,6 +12,7 @@ import base64
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
+from botocore.exceptions import ClientError
 
 
 def send_email_with_pdf(sender_email: str, receiver_emails: list, subject: str, pdf_file_path: str):
@@ -26,7 +27,7 @@ def send_email_with_pdf(sender_email: str, receiver_emails: list, subject: str, 
         encoders.encode_base64(pdf_part)
         pdf_part.add_header(
             "Content-Disposition",
-            f"attachment; filename= {pdf_file_path}",
+            f"attachment; filename= {os.path.basename(pdf_file_path)}",
         )
         pdf_part.add_header(
             "Content-Type",
@@ -41,18 +42,16 @@ def send_email_with_pdf(sender_email: str, receiver_emails: list, subject: str, 
         aws_access_key_id=os.environ["ACCESS_KEY_ID"],
         aws_secret_access_key=os.environ["SECRET_KEY_ID"]
     )
-    print(sender_email)
-    print(receiver_emails)
-    print(message.as_string())
+
     try:
         response = client.send_raw_email(
             Source=sender_email,
             Destinations=receiver_emails,
             RawMessage={'Data': message.as_string()}
         )
+        print(f"Email Sent to: {receiver_emails}")
 
-        print(response)
-    except Exception as err:
+    except ClientError as err:
         print(err.args[0])
         return err
 
@@ -90,21 +89,21 @@ def get_average_attributes(conn: connection, in_spotify: bool, in_tiktok: bool) 
 def event_to_dataframe(event: dict):
     if event is None:
         event = {}
-    if isinstance(event, dict):
+    if event.get("comparison_tracks") == None:
         event["comparison_tracks"] = [{"name": "Shape of You", "artists": "Ed Sheeran"},
                                       {"name": "Bohemian Rhapsody",
-                                          "artists": "Queen"},
+                                       "artists": "Queen"},
                                       {"name": "Hello", "artists": "Adele"},
                                       {"name": "Thinking Out Loud",
-                                          "artists": "Ed Sheeran"},
+                                       "artists": "Ed Sheeran"},
                                       {"name": "Smells Like Teen Spirit",
-                                          "artists": "Nirvana"},
+                                       "artists": "Nirvana"},
                                       {"name": "Billie Jean",
-                                          "artists": "Michael Jackson"},
+                                       "artists": "Michael Jackson"},
                                       {"name": "Hotel California",
-                                          "artists": "Eagles"},
+                                       "artists": "Eagles"},
                                       {"name": "Rolling in the Deep",
-                                          "artists": "Adele"},
+                                       "artists": "Adele"},
                                       {"name": "Hey Jude", "artists": "The Beatles"},
                                       {"name": "Sweet Child o' Mine", "artists": "Guns N' Roses"}]
 
@@ -126,7 +125,7 @@ def handler(event=None, context=None):
 
     # get comparison_tracks from event
     new_tracks_and_artists = event_to_dataframe(event)
-    print("Extracted new tracks and srtists from event")
+    print("Extracted new tracks and artists from event")
     # create dataframes
     df_both = get_average_attributes(
         conn, in_spotify=True, in_tiktok=True)
