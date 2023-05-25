@@ -91,3 +91,4 @@ def get_all_current_songs(conn) -> list:
         for item in result:
             result_list.append(f"{item['track_name']} - {item['artists']}")
     return result_list
+
