@@ -72,8 +72,6 @@ def get_top_ten(chart_type: str, conn) -> list[dict]:
 
     return top_entries
 
-
-
 load_dotenv()
 conn = get_db_connection()
 long_conn = get_db_connection(True)
@@ -93,71 +91,3 @@ def get_all_current_songs(conn) -> list:
         for item in result:
             result_list.append(f"{item['track_name']} - {item['artists']}")
     return result_list
-
-
-def get_song_chart_positions(user_input, sample):
-    '''
-    Gets chart position by date for given song
-    '''
-    # song_name = user_input
-    # # last_dash_index = user_input.rfind("-")
-    # # song_name = user_input[:last_dash_index].strip()
-    # with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
-    #     sql_query = "Select tiktok_rank, spotify_rank, recorded_at FROM track WHERE track_name = %s"
-    #     vals = (song_name,)
-    #     cur.execute(sql_query, vals)
-    #     results = cur.fetchall()
-    
-    chart_data = pd.DataFrame(columns=['tiktok_rank', 'spotify_rank', 'recorded_at'])
-    for item in sample:
-        # new_row = [item["tiktok_rank"], item["spotify_rank"], item["recorded_at"].date()]
-        new_row = [item["tiktok_rank"], item["spotify_rank"], item["recorded_at"]]
-        chart_data.loc[len(chart_data)] = new_row
-    
-    chart_data_sorted = chart_data.sort_values('recorded_at')
-    fig = px.line(chart_data_sorted, x='recorded_at', y=['tiktok_rank', 'spotify_rank'], 
-              title='Change in TikTok and Spotify Ranks',
-              labels={'value': 'Rank', 'recorded_at': 'Date'},
-              line_group='variable', color='variable')
-    fig.show()
-
-
-sample_list = [
-    {
-        'spotify_rank': 1,
-        'tiktok_rank': 7,
-        'recorded_at': '2023-05-18'
-    },
-    {
-        'spotify_rank': 2,
-        'tiktok_rank': 6,
-        'recorded_at': '2023-05-17'
-    },
-    {
-        'spotify_rank': 3,
-        'tiktok_rank': 5,
-        'recorded_at': '2023-05-16'
-    },
-    {
-        'spotify_rank': 4,
-        'tiktok_rank': 4,
-        'recorded_at': '2023-05-15'
-    },
-    {
-        'spotify_rank': 5,
-        'tiktok_rank': 3,
-        'recorded_at': '2023-05-14'
-    },
-    {
-        'spotify_rank': 6,
-        'tiktok_rank': 2,
-        'recorded_at': '2023-05-13'
-    },
-    {
-        'spotify_rank': 7,
-        'tiktok_rank': 1,
-        'recorded_at': '2023-05-12'
-    }
-]
-
-# get_song_chart_positions("WHERE SHE GOES", sample_list)
