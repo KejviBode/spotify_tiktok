@@ -1,7 +1,0 @@
-boto3
-matplotlib
-datetime
-python-dotenv
-psycopg2-binary
-pandas
-seaborn

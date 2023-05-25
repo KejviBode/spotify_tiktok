@@ -1,8 +1,8 @@
-boto3
-matplotlib
-datetime
-python-dotenv
 psycopg2-binary
-pandas
-seaborn
+python-dotenv
 plotly
+pandas
+datetime
+boto3
+xhtml2pdf
+kaleido
