@@ -27,7 +27,7 @@ CREATE TABLE artist (
     artist_spotify_id VARCHAR(200) UNIQUE NOT NULL,
     spotify_name VARCHAR(100) NOT NULL,
     recorded_at TIMESTAMP NOT NULL DEFAULT current_timestamp,
-    artist_genres VARCHAR(300),
+    artist_genres TEXT,
     PRIMARY KEY(artist_spotify_id)
 );
 

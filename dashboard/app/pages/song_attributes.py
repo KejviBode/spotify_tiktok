@@ -7,13 +7,13 @@ from psycopg2.extras import RealDictCursor
 
 from helper_functions import conn, get_all_current_songs, danceability, energy, valence, tempo, speechiness
 
-register_page(__name__, path="/attributes_by_song")
+register_page(__name__, path="/song_attributes")
 
 songs = get_all_current_songs(conn)
 
 
 layout = html.Main([html.Div(style={"margin-top": "100px"}),
-    html.H1("Attributes by song", style={'color': 'Black'}),
+    html.H1("Song Attributes", style={'color': 'Black'}),
                     dcc.Dropdown(options=[{'label': song, 'value': song} for song in songs], id="song-dropdown", placeholder="Choose One"),
                     dcc.Graph(id="song-attribute-graph"),
     html.Div([html.H2("Track Attributes Key:"),
@@ -60,7 +60,7 @@ def song_attribute_bar_chart(user_input):
 
     attribute_names = ['Danceability', 'Energy', 'Valence', 'Tempo', 'Speechiness']
     attribute_values = [graph_dict[attr] for attr in attribute_names]
-    colours = ['#1ed760', '#000000', '#00f2ea', '#ffffff', '#ff0050']
+    colours = ['#1ed760', '#000000', '#00f2ea', '#000000', '#ff0050']
 
 
     fig = go.Figure(data=[

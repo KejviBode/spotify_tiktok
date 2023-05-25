@@ -8,10 +8,10 @@ from psycopg2.extras import RealDictCursor
 
 from helper_functions import conn, danceability, energy, valence, tempo, speechiness
 
-register_page(__name__, path="/average_song_attributes")
+register_page(__name__, path="/average_attributes")
 
 layout = html.Main([html.Div(style={"margin-top": "100px"}),
-    html.H1("Average Song Attributes", style={'color': 'Black'}),
+    html.H1("Average Attributes", style={'color': 'Black'}),
                     dcc.Dropdown(["All", "Spotify", "Tiktok"], id="attribute-dropdown", placeholder="Choose One"),
                     dcc.Graph(id="attribute-graph"),
     html.Div([html.H2("Track Attributes Key:"),
@@ -124,7 +124,7 @@ def attribute_bar_chart(user_input):
             graph_dict["Tempo"] = (results[1][5] + results[1][5])/2
             graph_dicts.append(graph_dict)
 
-        colours = ['#1ed760', '#000000', '#00f2ea', '#ffffff', '#ff0050']
+        colours = ['#1ed760', '#000000', '#00f2ea', '#000000', '#ff0050']
 
 
         fig_px = px.bar(graph_dicts, x='name', y=['Danceability', 'Energy', 'Valence', 'Speechiness', 'Tempo'], barmode='group', title='Bar Chart')

@@ -34,7 +34,7 @@ app.layout = html.Div(
                         html.Span("T", style={"color": "#00f2ea"}),
                         html.Span("o", style={"color": "white"}),
                         html.Span("k", style={"color": "#ff0050"}),
-                        html.Span(" Chart Comparison", style={"color": "white"}),
+                        html.Span(" Charts", style={"color": "white"}),
                     ],
                     style={
                         "margin-top": "10px",

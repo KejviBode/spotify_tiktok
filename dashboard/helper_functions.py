@@ -3,6 +3,8 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import pandas as pd
+import plotly.express as px
+import datetime
 
 
 danceability = 'describes how suitable a track is for dancing based on a combination of musical \
@@ -70,8 +72,6 @@ def get_top_ten(chart_type: str, conn) -> list[dict]:
 
     return top_entries
 
-
-
 load_dotenv()
 conn = get_db_connection()
 long_conn = get_db_connection(True)
@@ -91,4 +91,3 @@ def get_all_current_songs(conn) -> list:
         for item in result:
             result_list.append(f"{item['track_name']} - {item['artists']}")
     return result_list
-
