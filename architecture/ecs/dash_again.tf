@@ -20,6 +20,16 @@ variable "DB_HOST" {
   sensitive = true
 }
 
+variable "DB_LONG_TERM_HOST" {
+  type      = string
+  sensitive = true
+}
+
+variable "DB_LONG_TERM_NAME" {
+  type      = string
+  sensitive = true
+}
+
 data "aws_vpc" "c7_vpc" {
   id = "vpc-010fd888c94cf5102"
 }
@@ -133,6 +143,14 @@ resource "aws_ecs_task_definition" "spotify-tiktok-dash-app" {
           {
             "name" : "DB_PASSWORD",
             "value" : var.DB_PASSWORD
+          },
+          {
+            "name" : "DB_LONG_TERM_NAME",
+            "value" : var.DB_LONG_TERM_NAME
+          },
+          {
+            "name" : "DB_LONG_TERM_HOST",
+            "value" : var.DB_LONG_TERM_HOST
           }
         ],
         "portMappings" : [
