@@ -13,7 +13,8 @@ register_page(__name__, path="/chart_overlap")
 layout = html.Main([html.Div(style={"margin-top": "100px"}),
     html.H1("Chart Overlap", style={'color': 'Black'}),
                     dcc.Dropdown(["None", "1 Day", "2 Days", "3 Days", "5 Days", "7 Days"], id="pie-dropdown", placeholder="Choose No. Days Lag"),
-                    dcc.Graph(id="pie-graph")])
+                    html.Div(dcc.Graph(id="pie-graph", style={'height': '700px', 'width': '700px'}),
+                             style={"display": "flex", "justify-content": "center", "align-items": "center", "height": "700px"})])
 
 @callback(Output(component_id="pie-graph", component_property="figure"),
           Input("pie-dropdown", "value"))
@@ -44,7 +45,9 @@ def pie_chart(user_input):
             cur.execute(sql_query2, vals)
             results = cur.fetchall()
             if len(results) == 0:
-                return px.pie(title="No Data Available")
+                fig = px.pie(title="No Data Available")
+                fig.update_layout(title={"text": fig["layout"]["title"]["text"], "x": 0.5})
+                return fig
             result_list = []
             for item in results:
                 result_list.append(item[0])
@@ -74,4 +77,5 @@ def pie_chart(user_input):
     colours = ['#ff0050', '#1ed760', '#00f2ea',]
 
     fig = px.pie(data, values='Count', names='Platforms', title='Platform Distribution', color_discrete_sequence=colours)
+    fig.update_layout(title={"text": fig["layout"]["title"]["text"], "x": 0.465})
     return fig

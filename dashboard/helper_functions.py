@@ -4,6 +4,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import pandas as pd
 
+
 danceability = 'describes how suitable a track is for dancing based on a combination of musical \
     elements including tempo, rhythm stability, beat strength, and overall regularity, with 0.0 being the \
         least danceable and 1.0 being the most.'
@@ -90,5 +91,3 @@ def get_all_current_songs(conn) -> list:
         for item in result:
             result_list.append(f"{item['track_name']} - {item['artists']}")
     return result_list
-
-

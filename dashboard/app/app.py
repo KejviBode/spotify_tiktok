@@ -3,8 +3,8 @@ from os import path
 from dash import Dash, html, dcc, callback, Input, Output, page_registry, page_container
 import plotly.express as px
 
-
-app = Dash(__name__, use_pages=True)
+external_stylesheets = ['app/assets/styles.css']
+app = Dash(__name__, use_pages=True, external_stylesheets=external_stylesheets)
 
 app.layout = html.Div(
     [
@@ -66,6 +66,12 @@ app.layout = html.Div(
                 ),
             ],
         ),
+        html.Div([html.Img(src="assets/spotify_logo.png", style={'width': '100px', 'height': '100px', 'padding-right': '20px'}),
+        html.Img(src="assets/tiktok_logo.png", style={'width': '100px', 'height': '100px', 'padding-right': '20px'})], \
+            style={"float": "right", "width": "30%", "margin-top": "-20px", "display": "flex", "justify-content": "flex-end", \
+                   "align-items": "center", 'margin-bottom': '10px'}),
         page_container,
     ]
 )
+
+# {'margin-top': '10px', "float": "right", "width": "30%"}
