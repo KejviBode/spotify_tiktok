@@ -45,21 +45,21 @@ app.layout = html.Div(
                 ),
                 html.Div(
                     className="button-container",
-                    style={"display": "flex", "align-items": "center", "margin-right": "20px"},
+                    style={"display": "flex", "align-items": "center", "margin-right": "10px"},
                     children=[
                         html.Button(
                             dcc.Link(
                                 page["name"],
                                 href=page["path"],
                                 style={
-                                    "margin-right": "10px",
-                                    "margin-left": "10px",
+                                    "margin-right": "5px",
+                                    "margin-left": "5px",
                                     "color": "black",
                                     "textDecoration": "none",
                                     "font-weight": "bold"
                                 },
                             ),
-                            style={"background-color": "#CDCBCD", "height": "20px", 'margin-right': '5px'},
+                            style={"background-color": "#CDCBCD", "height": "40px", 'margin-right': '5px'},
                         )
                         for page in page_registry.values()
                     ],
