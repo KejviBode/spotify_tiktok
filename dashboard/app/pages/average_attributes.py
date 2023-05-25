@@ -124,7 +124,7 @@ def attribute_bar_chart(user_input):
             graph_dict["Tempo"] = (results[1][5] + results[1][5])/2
             graph_dicts.append(graph_dict)
 
-        colours = ['#1ed760', '#000000', '#00f2ea', '#ffffff', '#ff0050']
+        colours = ['#1ed760', '#000000', '#00f2ea', '#000000', '#ff0050']
 
 
         fig_px = px.bar(graph_dicts, x='name', y=['Danceability', 'Energy', 'Valence', 'Speechiness', 'Tempo'], barmode='group', title='Bar Chart')

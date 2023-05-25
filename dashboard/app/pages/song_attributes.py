@@ -60,7 +60,7 @@ def song_attribute_bar_chart(user_input):
 
     attribute_names = ['Danceability', 'Energy', 'Valence', 'Tempo', 'Speechiness']
     attribute_values = [graph_dict[attr] for attr in attribute_names]
-    colours = ['#1ed760', '#000000', '#00f2ea', '#ffffff', '#ff0050']
+    colours = ['#1ed760', '#000000', '#00f2ea', '#000000', '#ff0050']
 
 
     fig = go.Figure(data=[
