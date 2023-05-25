@@ -124,12 +124,12 @@ variable "CLIENT_SECRET" {
 
 #definitely change
 resource "aws_lambda_function" "update" {
-  function_name = "spotify-tiktok-update"
+  function_name = "spotify-tiktok-update-tiktok"
   role          = aws_iam_role.iam_for_lambda.arn
-  architectures = ["arm64"]
+  architectures = ["x86_64"]
 
   package_type = "Image"
-  image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-1-hour-update:latest"
+  image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-daily-report:latest"
 
   timeout = 600
 
@@ -147,3 +147,4 @@ resource "aws_lambda_function" "update" {
     }
   }
 }
+
