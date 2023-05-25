@@ -27,7 +27,7 @@ def send_email_with_pdf(sender_email: str, receiver_emails: list, subject: str, 
         encoders.encode_base64(pdf_part)
         pdf_part.add_header(
             "Content-Disposition",
-            f"attachment; filename= {os.path.basename(pdf_file_path)}",
+            f"attachment; filename={os.path.basename(pdf_file_path)}",
         )
         pdf_part.add_header(
             "Content-Type",
@@ -106,9 +106,10 @@ def event_to_dataframe(event: dict):
                                        "artists": "Adele"},
                                       {"name": "Hey Jude", "artists": "The Beatles"},
                                       {"name": "Sweet Child o' Mine", "artists": "Guns N' Roses"}]
-
+    comp_tracks = [{"name": track["name"], "artists": [artist["name"]
+                                                       for artist in track["artists"]]} for track in event["comparison_tracks"]]
     comparison_tracks = pd.DataFrame(
-        event["comparison_tracks"], columns=['name', 'artists'])
+        comp_tracks, columns=['name', 'artists'])
     comparison_tracks = comparison_tracks.rename(
         columns={'name': 'Track Name', 'artists': 'Artist Name(s)'})
     comparison_tracks.reset_index(drop=True)

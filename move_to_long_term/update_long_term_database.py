@@ -134,12 +134,12 @@ def load_tiktok_track_views_data(short_conn: connection, long_conn: connection):
     with long_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "INSERT INTO tiktok_track_views (track_spotify_id, \
         tiktok_track_views_in_hundred_thousands, recorded_at) VALUES %s;"
-        vals = [(item["track_spotify_id"], 
+        vals = [(item["track_spotify_id"],
                  item["tiktok_track_views_in_hundred_thousands"],
                  item["recorded_at"])for item in result]
         execute_values(cur, sql_query, vals)
         long_conn.commit()
-    
+
 
 def load_tiktok_artist_views_data(short_conn: connection, long_conn: connection):
     with short_conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -156,7 +156,6 @@ def load_tiktok_artist_views_data(short_conn: connection, long_conn: connection)
                  item["recorded_at"])for item in result]
         execute_values(cur, sql_query, vals)
         long_conn.commit()
-
 
 
 def empty_short_term_tables(short_conn: connection):
@@ -195,6 +194,8 @@ def handler(event=None, context=None):
                 "old_tracks": [track["track_name"] for track in old_track_data],
                 "old_artists": [artist["spotify_name"] for artist in old_artist_data]}
     except Exception as err:
+        print(err.args[0])
+        print(err)
         return {"status_code": 400,
                 "message": err.args[0],
                 "old_tracks": "Failed to extract old tracks",
@@ -202,4 +203,4 @@ def handler(event=None, context=None):
 
 
 if __name__ == "__main__":
-    handler()
+    handler(event=None, context=None)

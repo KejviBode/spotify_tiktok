@@ -119,11 +119,11 @@ resource "aws_iam_role_policy_attachment" "function_logging_policy_attachment" {
   policy_arn = aws_iam_policy.function_logging_policy.arn
 }
 
-# lamdba extract stuff
+# lamdba extract spotify stuff
 resource "aws_lambda_function" "spotify-tiktok-extract" {
   function_name = "spotify-tiktok-daily-extract"
   role          = aws_iam_role.iam_for_lambda.arn
-  architectures = ["arm64"]
+  architectures = ["x86_64"]
 
   package_type = "Image"
   image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-daily-extraction:latest"
@@ -149,7 +149,7 @@ resource "aws_lambda_function" "spotify-tiktok-extract" {
 resource "aws_lambda_function" "spotify-tiktok-storage" {
   function_name = "spotify-tiktok-storage"
   role          = aws_iam_role.iam_for_lambda.arn
-  architectures = ["arm64"]
+  architectures = ["x86_64"]
 
   package_type = "Image"
   image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-storage:latest"
@@ -158,13 +158,13 @@ resource "aws_lambda_function" "spotify-tiktok-storage" {
 
   environment {
     variables = {
-      DB_PORT       = 5432
-      DB_USER       = var.DB_USER
-      DB_HOST       = var.DB_HOST
-      DB_NAME       = var.DB_NAME
-      DB_PASSWORD   = var.DB_PASSWORD
-      ACCESS_KEY_ID = var.ACCESS_KEY_ID
-      SECRET_KEY_ID = var.SECRET_KEY_ID
+      DB_PORT           = 5432
+      DB_USER           = var.DB_USER
+      DB_HOST           = var.DB_HOST
+      DB_NAME           = var.DB_NAME
+      DB_PASSWORD       = var.DB_PASSWORD
+      ACCESS_KEY_ID     = var.ACCESS_KEY_ID
+      SECRET_KEY_ID     = var.SECRET_KEY_ID
       DB_LONG_TERM_NAME = var.DB_LONG_TERM_NAME
       DB_LONG_TERM_HOST = var.DB_LONG_TERM_HOST
     }
@@ -174,10 +174,12 @@ resource "aws_lambda_function" "spotify-tiktok-storage" {
 resource "aws_lambda_function" "spotify-tiktok-report" {
   function_name = "spotify-tiktok-report"
   role          = aws_iam_role.iam_for_lambda.arn
-  architectures = ["arm64"]
+  architectures = ["x86_64"]
 
   package_type = "Image"
   image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-daily-report:latest"
+
+  memory_size = 1000
 
   timeout = 600
 
@@ -193,10 +195,35 @@ resource "aws_lambda_function" "spotify-tiktok-report" {
     }
   }
 }
+# update spotify
+resource "aws_lambda_function" "spotify-tiktok-update-spotify" {
+  function_name = "spotify-tiktok-update-spotify"
+  role          = aws_iam_role.iam_for_lambda.arn
+  architectures = ["x86_64"]
+
+  package_type = "Image"
+  image_uri    = "605126261673.dkr.ecr.eu-west-2.amazonaws.com/spotify-tiktok-update-spotify:latest"
+
+  timeout = 600
+
+  environment {
+    variables = {
+      DB_PORT       = 5432
+      DB_USER       = var.DB_USER
+      DB_HOST       = var.DB_HOST
+      DB_NAME       = var.DB_NAME
+      DB_PASSWORD   = var.DB_PASSWORD
+      ACCESS_KEY_ID = var.ACCESS_KEY_ID
+      SECRET_KEY_ID = var.SECRET_KEY_ID
+      CLIENT_ID     = var.CLIENT_ID
+      CLIENT_SECRET = var.CLIENT_SECRET
+    }
+  }
+}
 
 # sns topic stuff
 resource "aws_sns_topic" "topic" {
-  name = "spotify-tiktok-tracks-remained-in-top-100"
+  name = "tiktok-tracks-remained-in-top-100"
 }
 
 resource "aws_sns_topic_subscription" "ilyas-target" {
@@ -214,6 +241,54 @@ resource "aws_sns_topic_subscription" "selvy-target" {
   protocol  = "email"
   endpoint  = "trainee.selvy.yasotharan@sigmalabs.co.uk"
 }
+# sns publish policy
+
+resource "aws_iam_role" "sns_publish_role" {
+  name = "spotify-tiktok-sns-role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "states.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_policy" "sns_publish_policy" {
+  name        = "sns-publish-policy"
+  description = "Allows publishing messages to the SNS topic"
+
+  policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "sns:Publish"
+      ],
+      "Resource": [
+        "${aws_sns_topic.topic.arn}"
+      ]
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy_attachment" "sns_publish_attachment" {
+  policy_arn = aws_iam_policy.sns_publish_policy.arn
+  role       = aws_iam_role.step_function_role.name
+}
+
 
 # step-function stuff
 resource "aws_sfn_state_machine" "sfn_state_machine" {
@@ -223,13 +298,8 @@ resource "aws_sfn_state_machine" "sfn_state_machine" {
   definition = <<-EOF
   {
     "Comment": "Invoke AWS Lambda from AWS Step Functions with Terraform",
-    "StartAt": "Report",
+    "StartAt": "Store",
     "States": {
-      "Report": {
-        "Type": "Task",
-        "Resource": "${aws_lambda_function.spotify-tiktok-report.arn}",
-        "Next" : "Store"
-      },
       "Store": {
         "Type": "Task",
         "Resource": "${aws_lambda_function.spotify-tiktok-storage.arn}",
@@ -238,12 +308,32 @@ resource "aws_sfn_state_machine" "sfn_state_machine" {
       "Extract": {
         "Type": "Task",
         "Resource": "${aws_lambda_function.spotify-tiktok-extract.arn}",
+        "Next": "Report"
+      },
+      "Report": {
+        "Type": "Task",
+        "Resource": "${aws_lambda_function.spotify-tiktok-report.arn}",
+        "Next" : "Update"
+      },
+      "Update": {
+        "Type": "Task",
+        "Resource": "${aws_lambda_function.spotify-tiktok-update-spotify.arn}",
+        "Next" : "SNS Publish"
+      },
+      "SNS Publish": {
+        "Type": "Task",
+        "Resource": "arn:aws:states:::sns:publish",
+        "Parameters": {
+          "TopicArn": "${aws_sns_topic.topic.arn}",
+          "Message.$": "$"
+        },
         "End": true
       }
     }
   }
   EOF
 }
+
 
 # Creating iam role to run lambda function
 resource "aws_iam_role" "step_function_role" {
@@ -305,7 +395,8 @@ resource "aws_iam_role_policy" "step_function_policy" {
         "Resource": [
           "${aws_lambda_function.spotify-tiktok-extract.arn}",
           "${aws_lambda_function.spotify-tiktok-storage.arn}",
-          "${aws_lambda_function.spotify-tiktok-report.arn}"
+          "${aws_lambda_function.spotify-tiktok-report.arn}",
+          "${aws_lambda_function.spotify-tiktok-update-spotify.arn}"
         ]
       }
     ]
