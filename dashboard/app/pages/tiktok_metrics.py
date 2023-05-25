@@ -13,7 +13,10 @@ register_page(__name__, path="/tiktok_track_metrics")
 long_term_conn = get_db_connection(True)
 
 
-def get_tt_track_views():
+def get_tt_track_views() ->list[dict]:
+    '''
+    Returns track information 
+    '''
     sql_query = "SELECT track.track_spotify_id, tiktok_track_views_in_hundred_thousands,\
           tiktok_track_views.recorded_at AS time, track.track_name FROM tiktok_track_views \
             JOIN track ON track.track_spotify_id = tiktok_track_views.track_spotify_id;"
