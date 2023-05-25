@@ -12,6 +12,7 @@ register_page(__name__, path="/artist_popularity")
 
 long_term_conn = get_db_connection(True)
 
+
 def get_artist_pop():
     sql_query = "SELECT * FROM artist JOIN artist_popularity on artist.artist_spotify_id = artist_popularity.artist_spotify_id;"
     with long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -55,6 +56,9 @@ layout = html.Main([
      Input("date_slider", "end_date")]
 )
 def create_artist_popularity_graph(user_input_artist, user_input_metric, user_start_date, user_end_date=MAX_DATE):
+    '''
+    Creates a line graph showing an artist's popularity/follower count over time
+    '''
     while user_input_artist is None or user_input_metric is None or user_start_date is None or user_end_date is None:
         return px.line()
     if user_input_metric == "Follower count":
