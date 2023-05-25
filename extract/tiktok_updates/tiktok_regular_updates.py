@@ -206,7 +206,6 @@ def handler(event=None, context=None):
         print("Error")
         return {"status code": "400",
                 "message": err,
-                "report_event": event,
                 "step_func_status": event["message"]
                 }
 
