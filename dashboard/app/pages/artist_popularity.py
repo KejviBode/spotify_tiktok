@@ -75,12 +75,10 @@ layout = html.Main([
 )
 def create_artist_popularity_graph(user_input_artist, user_start_date, user_end_date=MAX_DATE):
     while user_input_artist is None or user_start_date is None or user_end_date is None:
-        return None
+        return px.line()
     artist_df = artist_pop_df[artist_pop_df["spotify_name"] == user_input_artist]
     artist_df = artist_df.loc[(artist_df["created_at"] <= (datetime.strptime(user_end_date, "%Y-%m-%d")  + timedelta(days=1))) & (
         artist_df["created_at"] >= user_start_date)]
-    print(artist_df["created_at"])
-    print(artist_df["follower_count"])
     # artist_df_dates = artist_df.loc[(artist_df["created_at"] <= user_end_date) & (artist_df["created_at"]>=user_start_date)]
     # print(artist_df.columns)
     # print(artist_df)

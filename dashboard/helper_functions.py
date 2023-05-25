@@ -61,9 +61,9 @@ def get_all_current_songs(conn):
             GROUP BY track.track_name;"
         cur.execute(sql_query)
         result = cur.fetchall()
-        for item in result:
-            print(item)
-            print("   ")
+        # for item in result:
+        #     print(item)
+        #     print("   ")
 
 get_all_current_songs(conn)
 
