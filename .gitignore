@@ -8,3 +8,4 @@ tmp
 extract/__pycache__
 terraform_test/
 __pycache__
+.DS_Store
