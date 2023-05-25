@@ -28,8 +28,8 @@ The project is organized into the following directories:
 - `extract`: Contains the backend code for gathering data from the Spotify API and TikTok scraping.
 - `dashboard`: Includes the code for the Dash dashboard to visualize the data and rankings comparison.
 - `architecture`: Contains the Terraform configuration files to provision the required AWS resources.
-- 'move_to_long_term': Contains the backend code for transferring the data from the short-term database to the long-term database.
-- 'pdf_from_html': Contains the code for creating a daily pdf report contain information on new tracks in the charts.
+- `move_to_long_term`: Contains the backend code for transferring the data from the short-term database to the long-term database.
+- `pdf_from_html`: Contains the code for creating a daily pdf report contain information on new tracks in the charts.
 
 ## Deployment
 
