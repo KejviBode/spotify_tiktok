@@ -49,7 +49,7 @@ def get_all_popularity(ids: list, headers: str, type: str) -> list[dict]:
             popularity_data["follower_count"] = track_popularity["follower_count"]
         popularity_scores.append(popularity_data)
     return popularity_scores
-        
+
 
 def add_popularity_to_database(popularity_data: list[dict], type: str, conn):
     '''
@@ -59,7 +59,8 @@ def add_popularity_to_database(popularity_data: list[dict], type: str, conn):
         if type == "track":
             add_track_popularity(item["id"], item["popularity"], conn)
         elif type == "artist":
-            add_artist_popularity_data(item["id"], item["popularity"], item["follower_count"], conn)
+            add_artist_popularity_data(
+                item["id"], item["popularity"], item["follower_count"], conn)
 
 
 def add_track_popularity(track_id: int, popularity: int, conn):
@@ -91,14 +92,12 @@ def handler(event=None, context=None, callback=None):
     try:
         load_dotenv()
         conn = get_db_connection()
-        
 
         if check_database_empty(conn):
             print("Tracks table currently empty")
         else:
             client_id = os.getenv("CLIENT_ID")
             client_secret = os.getenv("CLIENT_SECRET")
-
 
             tracks = get_column_values("track", "track_spotify_id", conn)
             artists = get_column_values("artist", "artist_spotify_id", conn)
@@ -121,7 +120,7 @@ def handler(event=None, context=None, callback=None):
     except Exception as err:
         print("Error")
         return {"status code": "400", "message": err}
-        
+
 
 if __name__ == "__main__":
     handler()

@@ -274,10 +274,12 @@ def match_old_tracks_and_artists(old_tracks: dict, old_artists, new_tracks: list
                 track_counter += 1
         if track_counter == 0:
             new_to_track_charts.append(
-                {"name": new_track['name'], "artists": new_track["artists"]})
-    new_to_track_charts = sorted(
-        new_to_track_charts, key=lambda x: x['tiktok_rank'])
-    return new_to_track_charts
+                {"name": new_track['name'], "artists": new_track["artists"], "tiktok_rank": new_track["tiktok_rank"]})
+    new_tiktok_tracks = [
+        track for track in new_to_track_charts if track.get("tiktok_rank") != None]
+    new_tiktok_tracks = sorted(
+        new_tiktok_tracks, key=lambda x: x['tiktok_rank'])
+    return new_tiktok_tracks[:10]
 
 
 def handler(event=None, context=None):
@@ -321,10 +323,9 @@ def handler(event=None, context=None):
         print("Complete!\n")
         spotify_tracks.extend(unmatched_tiktok_songs)
         print("Success!")
-        print(event)
         if isinstance(event, dict):
             new_tracks = match_old_tracks_and_artists(
-                event["old_tracks"], event["old_artists"], spotify_tracks)
+                event["old_tracks"], event["old_artists"], unmatched_tiktok_songs)
         else:
             new_tracks = "Couldn't find old tracks and artists :("
         END = datetime.now()
@@ -337,6 +338,7 @@ def handler(event=None, context=None):
         END = datetime.now()
         PROCESS = END - START
         print(f"Run time: {PROCESS}")
+        print(err)
         print({"status_code": 400,
                "message": err.args})
         return {"status_code": 400,
