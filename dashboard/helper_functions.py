@@ -3,6 +3,7 @@ import os
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import pandas as pd
+import datetime
 
 
 danceability = 'describes how suitable a track is for dancing based on a combination of musical \
@@ -92,3 +93,20 @@ def get_all_current_songs(conn) -> list:
             result_list.append(f"{item['track_name']} - {item['artists']}")
     return result_list
 
+
+def get_song_chart_positions(user_input):
+    '''
+    Gets chart position by date for given song
+    '''
+    song_name = user_input
+    # last_dash_index = user_input.rfind("-")
+    # song_name = user_input[:last_dash_index].strip()
+    with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
+        sql_query = "Select tiktok_rank, spotify_rank, recorded_at FROM track WHERE track_name = %s"
+        vals = (song_name,)
+        cur.execute(sql_query, vals)
+        results = cur.fetchall()
+    print(results)
+    print(results[0]["recorded_at"].date())
+
+get_song_chart_positions("WHERE SHE GOES")
