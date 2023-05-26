@@ -14,7 +14,7 @@ songs = get_all_current_songs(conn)
 
 layout = html.Main([html.Div(style={"margin-top": "100px"}),
     html.H1("Song Attributes", style={'color': 'Black'}),
-                    dcc.Dropdown(options=[{'label': song, 'value': song} for song in songs], id="song-dropdown", placeholder="Choose One"),
+                    dcc.Dropdown(id="song-dropdown", placeholder="Choose One"),
                     dcc.Graph(id="song-attribute-graph"),
     html.Div([html.H2("Track Attributes Key:"),
         html.Ul(
@@ -29,16 +29,20 @@ layout = html.Main([html.Div(style={"margin-top": "100px"}),
     ])
 
 @callback(Output(component_id="song-attribute-graph", component_property="figure"),
+          Output(component_id="song-dropdown",
+                 component_property="options"),
           Input("song-dropdown", "value"))
 def song_attribute_bar_chart(user_input):
     '''
     Creates bar graph of attributes for song from user input
     '''
     if user_input is None:
+        songs = get_all_current_songs(conn)
         fig = px.bar()
         fig.update_layout(xaxis_title="Track Attributes", yaxis_title="Value", title="Please choose a song", plot_bgcolor='#bfbdbd')
         fig.update_yaxes(range=[0, 1])
-        return fig
+        return fig, [{'label': song, 'value': song} for song in songs]
+    songs = get_all_current_songs(conn)
     last_dash_index = user_input.rfind("-")
     song_name = user_input[:last_dash_index].strip()
     with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -69,4 +73,4 @@ def song_attribute_bar_chart(user_input):
                       title=f'Song Attributes: {user_input}', showlegend=False, plot_bgcolor='#bfbdbd')
 
     fig.update_yaxes(range=[0, 1])
-    return fig
+    return fig, [{'label': song, 'value': song} for song in songs]

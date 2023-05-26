@@ -3,4 +3,4 @@ WORKDIR ${LAMBDA_TASK_ROOT}
 COPY requirements.txt .
 RUN pip3 install -r requirements.txt
 COPY . .
-CMD ["spotify_api.handler"]
+CMD ["tiktok_regular_updates.handler"]
