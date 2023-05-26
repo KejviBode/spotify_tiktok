@@ -24,31 +24,27 @@ def get_tt_artist_pop() -> list[dict]:
     with long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(sql_query)
         result = cur.fetchall()
-    return result
+    tt_artist_pop_df = pd.DataFrame(result)
+    tt_artist_names = tt_artist_pop_df["spotify_name"]
+    tt_artist_dates = tt_artist_pop_df.sort_values(by="time", ascending=True)
+    pd.to_datetime(tt_artist_dates["time"])
+    min_date = tt_artist_dates["time"].dt.date.min()
+    max_date = tt_artist_dates["time"].dt.date.max() + timedelta(days=1)
+    return tt_artist_pop_df, tt_artist_names, min_date, max_date
 
 
-tt_artist_pop = get_tt_artist_pop()
-tt_artist_pop_df = pd.DataFrame(tt_artist_pop)
-tt_artist_names = tt_artist_pop_df["spotify_name"]
-tt_artist_dates = tt_artist_pop_df.sort_values(by="time", ascending=True)
-pd.to_datetime(tt_artist_dates["time"])
-MIN_DATE = tt_artist_dates["time"].dt.date.min()
-MAX_DATE = tt_artist_dates["time"].dt.date.max() + timedelta(days=1)
 
 
 layout = html.Main([
     html.Div(style={"margin-top": "100px"}),
     html.H1("Artist TikTok Metrics Over Time"),
-    dcc.Dropdown(options=tt_artist_names,
-                 id="artist_names",
+    dcc.Dropdown(id="artist_names",
                  placeholder="Type in an artist name or select one\
                  from the dropdown"),
     dcc.Dropdown(options=["Follower count", "Likes"],
                  id="follower_or_likes",
                  placeholder="Please select how you'd like to track this artist"),
-    dcc.DatePickerRange(min_date_allowed=MIN_DATE,
-                        max_date_allowed=MAX_DATE,
-                        id="date_slider",
+    dcc.DatePickerRange(id="date_slider",
                         display_format="D-M-Y"),
     dcc.Graph(id="follower_graph")
 ])
@@ -57,21 +53,29 @@ layout = html.Main([
 @callback(
     Output(component_id="follower_graph",
            component_property="figure"),
+    Output(component_id="artist_names",
+           component_property="options"),
+    Output(component_id="date_slider",
+           component_property="min_date_allowed"),
+    Output(component_id="date_slider", 
+           component_property="max_date_allowed"),
     Input("artist_names", "value"),
     Input("follower_or_likes", "value"),
     [Input("date_slider", "start_date"),
      Input("date_slider", "end_date")]
 )
-def create_artist_popularity_graph(user_input_artist, user_input_metric, user_start_date, user_end_date=MAX_DATE):
+def create_artist_popularity_graph(user_input_artist, user_input_metric, user_start_date, user_end_date):
     '''
     Creates a line graph showing an artist's popularity/follower count over time
     '''
     while user_input_artist is None or user_input_metric is None or user_start_date is None or user_end_date is None:
-        return px.line()
+        tt_artist_pop_df, tt_artist_names, min_date, max_date = get_tt_artist_pop()
+        return px.line(), tt_artist_names, min_date, max_date
     if user_input_metric == "Follower count":
         metric = "artist_tiktok_follower_count_in_hundred_thousands"
     else:
         metric = "artist_tiktok_like_count_in_hundred_thousands"
+    tt_artist_pop_df, tt_artist_names, min_date, max_date = get_tt_artist_pop()
     artist_df = tt_artist_pop_df[tt_artist_pop_df["spotify_name"]
                               == user_input_artist]
     artist_df = artist_df.loc[(artist_df["time"] <= (datetime.strptime(user_end_date, "%Y-%m-%d") + timedelta(days=1))) & (
@@ -79,4 +83,4 @@ def create_artist_popularity_graph(user_input_artist, user_input_metric, user_st
     fig = px.line(artist_df, x="time",
                   y=f"{metric}", title=f"{user_input_artist}'s {user_input_metric} over time")
     fig.update_yaxes(rangemode="tozero")
-    return fig
+    return fig, tt_artist_names, min_date, max_date
