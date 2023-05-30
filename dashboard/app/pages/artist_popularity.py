@@ -10,10 +10,8 @@ from helper_functions import get_db_connection
 register_page(__name__, path="/artist_popularity")
 
 
-long_term_conn = get_db_connection(True)
-
-
 def get_artist_pop():
+    long_term_conn = get_db_connection(True)
     sql_query = "SELECT * FROM artist JOIN artist_popularity on artist.artist_spotify_id = artist_popularity.artist_spotify_id;"
     with long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(sql_query)
@@ -25,8 +23,6 @@ def get_artist_pop():
     min_date = artist_dates["created_at"].dt.date.min()
     max_date = artist_dates["created_at"].dt.date.max() + timedelta(days=1)
     return artist_pop_df, artist_names, min_date, max_date
-
-
 
 
 layout = html.Main([
@@ -42,6 +38,7 @@ layout = html.Main([
                         display_format="D-M-Y"),
     dcc.Graph(id="popularity_graph")
 ])
+
 
 @callback(
     Output(component_id="popularity_graph",

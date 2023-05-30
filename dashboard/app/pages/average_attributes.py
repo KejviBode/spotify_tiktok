@@ -6,7 +6,7 @@ import pandas as pd
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from helper_functions import conn, danceability, energy, valence, tempo, speechiness
+from helper_functions import danceability, energy, valence, tempo, speechiness, get_db_connection
 
 register_page(__name__, path="/average_attributes")
 
@@ -32,6 +32,7 @@ def attribute_bar_chart(user_input):
     '''
     Creates a bar chart of the average attributes across all songs
     '''
+    conn = get_db_connection()
     with conn, conn.cursor() as cur:
         if user_input == "All" or user_input == None:
             sql_input = '''

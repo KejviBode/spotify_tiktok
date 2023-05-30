@@ -126,12 +126,12 @@ def load_artist_popularity_data(short_conn: connection, long_conn: connection):
 
 
 def load_tiktok_track_views_data(short_conn: connection, long_conn: connection):
-    with short_conn.cursor(cursor_factory=RealDictCursor) as cur:
+    with short_conn, short_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "SELECT * FROM tiktok_track_views;"
         cur.execute(sql_query)
         result = cur.fetchall()
 
-    with long_conn.cursor(cursor_factory=RealDictCursor) as cur:
+    with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "INSERT INTO tiktok_track_views (track_spotify_id, \
         tiktok_track_views_in_hundred_thousands, recorded_at) VALUES %s;"
         vals = [(item["track_spotify_id"],
@@ -142,12 +142,12 @@ def load_tiktok_track_views_data(short_conn: connection, long_conn: connection):
 
 
 def load_tiktok_artist_views_data(short_conn: connection, long_conn: connection):
-    with short_conn.cursor(cursor_factory=RealDictCursor) as cur:
+    with short_conn, short_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "SELECT * FROM tiktok_artist_views;"
         cur.execute(sql_query)
         result = cur.fetchall()
 
-    with long_conn.cursor(cursor_factory=RealDictCursor) as cur:
+    with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
         sql_query = "INSERT INTO tiktok_artist_views (artist_spotify_id, \
         artist_tiktok_follower_count_in_hundred_thousands, artist_tiktok_like_count_in_hundred_thousands, recorded_at) VALUES %s;"
         vals = [(item["artist_spotify_id"],

@@ -9,30 +9,60 @@ from helper_functions import get_db_connection
 
 register_page(__name__, path="/artist_tiktok_metrics")
 
+def get_tt_artist_names() -> list[str]:
+    '''
+    Returns a list of all artist names in the long term database
+    '''
+    long_term_conn = get_db_connection(True)
+    sql_name_query = "select spotify_name from artist;"
+    with long_term_conn, long_term_conn.cursor() as cur:
+        cur.execute(sql_name_query)
+        result = cur.fetchall()
+    names = []
+    [names.extend(name) for name in result]
+    return names
 
-long_term_conn = get_db_connection(True)
+def get_min_max_dates(artist_name: str):
+    '''
+    Returns the min and max dates of when artist has begun being tracked
+    '''
+    long_term_conn = get_db_connection(True)
+    sql_date_query = "select min(DATE(tiktok_artist_views.recorded_at)), max(DATE(tiktok_artist_views.recorded_at)) \
+        FROM artist JOIN tiktok_artist_views ON artist.artist_spotify_id = tiktok_artist_views.artist_spotify_id\
+              WHERE artist.spotify_name = %s"
+    with long_term_conn, long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql_date_query, (artist_name,))
+        result = cur.fetchall()
+    return result[0]["min"], result[0]["max"]
 
-
-def get_tt_artist_pop() -> list[dict]:
+def get_tt_artist_pop(name: str = None) -> list[dict]:
     '''
     Returns all artist in long term database that have a tiktok account and their metrics on tiktok
     '''
-    sql_query = "select artist.artist_spotify_id, artist_tiktok_follower_count_in_hundred_thousands,\
-          artist_tiktok_like_count_in_hundred_thousands, tiktok_artist_views.recorded_at as time, \
-            artist.spotify_name from tiktok_artist_views join artist on artist.artist_spotify_id = \
-                tiktok_artist_views.artist_spotify_id;"
-    with long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql_query)
-        result = cur.fetchall()
+    long_term_conn = get_db_connection(True)
+    if name is None:
+        sql_query = "select artist.artist_spotify_id, artist_tiktok_follower_count_in_hundred_thousands,\
+            artist_tiktok_like_count_in_hundred_thousands, tiktok_artist_views.recorded_at as time, \
+                artist.spotify_name from tiktok_artist_views join artist on artist.artist_spotify_id = \
+                    tiktok_artist_views.artist_spotify_id ORDER BY time ASC;"
+        with long_term_conn, long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(sql_query)
+            result = cur.fetchall()
+    else:
+        sql_query = "select artist.artist_spotify_id, artist_tiktok_follower_count_in_hundred_thousands,\
+            artist_tiktok_like_count_in_hundred_thousands, tiktok_artist_views.recorded_at as time, \
+                artist.spotify_name from tiktok_artist_views join artist on artist.artist_spotify_id = \
+                    tiktok_artist_views.artist_spotify_id where spotify_name = %s ORDER BY time ASC;"
+        with long_term_conn, long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(sql_query, (name,))
+            result = cur.fetchall()
     tt_artist_pop_df = pd.DataFrame(result)
     tt_artist_names = tt_artist_pop_df["spotify_name"]
+    pd.to_datetime(tt_artist_pop_df["time"])
     tt_artist_dates = tt_artist_pop_df.sort_values(by="time", ascending=True)
-    pd.to_datetime(tt_artist_dates["time"])
     min_date = tt_artist_dates["time"].dt.date.min()
     max_date = tt_artist_dates["time"].dt.date.max() + timedelta(days=1)
     return tt_artist_pop_df, tt_artist_names, min_date, max_date
-
-
 
 
 layout = html.Main([
@@ -68,19 +98,25 @@ def create_artist_popularity_graph(user_input_artist, user_input_metric, user_st
     '''
     Creates a line graph showing an artist's popularity/follower count over time
     '''
-    while user_input_artist is None or user_input_metric is None or user_start_date is None or user_end_date is None:
-        tt_artist_pop_df, tt_artist_names, min_date, max_date = get_tt_artist_pop()
+    while user_input_artist is None:
+        # tt_artist_pop_df, tt_artist_names, min_date, max_date = get_tt_artist_pop()
+        tt_artist_names = get_tt_artist_names()
+        return px.line(), tt_artist_names, datetime.now().date(), datetime.now().date()
+    while user_input_metric is None or user_start_date is None or user_end_date is None:
+        tt_artist_names = get_tt_artist_names()
+        min_date, max_date = get_min_max_dates(user_input_artist)
         return px.line(), tt_artist_names, min_date, max_date
     if user_input_metric == "Follower count":
         metric = "artist_tiktok_follower_count_in_hundred_thousands"
     else:
         metric = "artist_tiktok_like_count_in_hundred_thousands"
-    tt_artist_pop_df, tt_artist_names, min_date, max_date = get_tt_artist_pop()
+    tt_artist_pop_df, tt_artist_names, min_date, max_date = get_tt_artist_pop(user_input_artist)
+    complete_tt_artist_names = get_tt_artist_names()
     artist_df = tt_artist_pop_df[tt_artist_pop_df["spotify_name"]
                               == user_input_artist]
     artist_df = artist_df.loc[(artist_df["time"] <= (datetime.strptime(user_end_date, "%Y-%m-%d") + timedelta(days=1))) & (
         artist_df["time"] >= user_start_date)]
     fig = px.line(artist_df, x="time",
                   y=f"{metric}", title=f"{user_input_artist}'s {user_input_metric} over time")
-    fig.update_yaxes(rangemode="tozero")
-    return fig, tt_artist_names, min_date, max_date
+    # fig.update_yaxes(rangemode="tozero")
+    return fig, complete_tt_artist_names, min_date, max_date

@@ -5,7 +5,7 @@ import pandas as pd
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from helper_functions import conn
+from helper_functions import get_db_connection
 
 register_page(__name__, path="/genres")
 
@@ -20,6 +20,7 @@ def song_attribute_bar_chart(user_input):
     '''
     Creates a bar chart of the top 20 genres by count
     '''
+    conn = get_db_connection()
     if user_input != "All" and user_input != None:
         sql_query = f"""
             SELECT g.genre_name, COUNT(ag.genre_id) AS genre_count

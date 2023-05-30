@@ -12,9 +12,6 @@ from helper_functions import get_db_connection, get_all_current_songs
 register_page(__name__, path="/chart_position")
 
 
-long_conn = get_db_connection(True)
-
-
 layout = html.Main([html.Div(style={"margin-top": "100px"}),
     html.H1("Chart Position", style={'color': 'Black'}),
                     dcc.Dropdown(id="chart-dropdown", placeholder="Choose One"),
@@ -28,6 +25,7 @@ def get_song_chart_positions(user_input):
     '''
     Gets chart position by date for given song
     '''
+    long_conn = get_db_connection(True)
     if user_input is None:
         songs = get_all_current_songs(long_conn)
         return px.line(), [{'label': song, 'value': song} for song in songs]

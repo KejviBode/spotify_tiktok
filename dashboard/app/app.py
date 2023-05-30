@@ -26,15 +26,14 @@ app.layout = html.Div(
             children=[
                 html.H1(
                     children=[
-                        html.Span("Spotify", style={"color": "#1ed760"}),
-                        html.Span("/", style={"color": "white"}),
-                        html.Span("T", style={"color": "#00f2ea"}),
-                        html.Span("i", style={"color": "white"}),
-                        html.Span("k", style={"color": "#ff0050"}),
+                        # html.Span("/", style={"color": "white"}),
+                        # html.Span("T", style={"color": "#00f2ea"}),
+                        # html.Span("i", style={"color": "white"}),
+                        # html.Span("k", style={"color": "#ff0050"}),
                         html.Span("T", style={"color": "#00f2ea"}),
                         html.Span("o", style={"color": "white"}),
                         html.Span("k", style={"color": "#ff0050"}),
-                        html.Span(" Charts", style={"color": "white"}),
+                        html.Span("ify", style={"color": "#1ed760"})
                     ],
                     style={
                         "margin-top": "10px",
