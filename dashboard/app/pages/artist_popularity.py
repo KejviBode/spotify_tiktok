@@ -10,11 +10,12 @@ from helper_functions import get_db_connection
 register_page(__name__, path="/artist_popularity")
 
 
-def get_artist_pop():
-    long_term_conn = get_db_connection(True)
-    sql_query = "SELECT * FROM artist JOIN artist_popularity on artist.artist_spotify_id = artist_popularity.artist_spotify_id;"
-    with long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql_query)
+def get_artist_pop(name: str = None):
+    long_conn = get_db_connection(True)
+    sql_query = "SELECT * FROM artist JOIN artist_popularity on artist.artist_spotify_id = \
+        artist_popularity.artist_spotify_id WHERE artist.spotify_name = %s;"
+    with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql_query, (name,))
         result = cur.fetchall()
     artist_pop_df = pd.DataFrame(result)
     artist_names = artist_pop_df["spotify_name"]
@@ -59,13 +60,13 @@ def create_artist_popularity_graph(user_input_artist, user_input_metric, user_st
     Creates a line graph showing an artist's popularity/follower count over time
     '''
     while user_input_artist is None or user_input_metric is None or user_start_date is None or user_end_date is None:
-        artist_pop_df, artist_names, min_date, max_date = get_artist_pop()
+        artist_pop_df, artist_names, min_date, max_date = get_artist_pop(user_input_artist)
         return px.line(), artist_names, min_date, max_date
     if user_input_metric == "Follower count":
         metric = "follower_count"
     else:
         metric = "artist_popularity"
-    artist_pop_df, artist_names, min_date, max_date = get_artist_pop()
+    artist_pop_df, artist_names, min_date, max_date = get_artist_pop(user_input_artist)
     artist_df = artist_pop_df[artist_pop_df["spotify_name"] == user_input_artist]
     artist_df = artist_df.loc[(artist_df["created_at"] <= (datetime.strptime(user_end_date, "%Y-%m-%d")  + timedelta(days=1))) & (
         artist_df["created_at"] >= user_start_date)]

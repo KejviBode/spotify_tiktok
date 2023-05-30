@@ -10,6 +10,30 @@ from helper_functions import get_db_connection
 register_page(__name__, path="/tiktok_track_metrics")
 
 
+def get_track_names() -> list[str]:
+    '''
+    Returns a list of all track names
+    '''
+    long_term_conn = get_db_connection(True)
+    sql_track_query = "SELECT track_name from track;"
+    with long_term_conn, long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql_track_query)
+        result = cur.fetchall()
+    track_names = []
+    [track_names.extend(track) for track in result]
+    return track_names
+
+
+def get_min_max_dates(track_name: str) -> str:
+    '''
+    Returns the min and max dates of when a track has entered the charts
+    '''
+    sql_date_query = "select min(DATE(tiktok_track_views.recorded_at)), max(DATE(tiktok_track_views.recorded_at)) \
+                    FROM track JOIN tiktok_tack_views ON track.track_spotify_id = tiktok_track_views.track_spotify_id\
+                        WHERE track.track_name = %s"
+    pass
+
+
 def get_tt_track_views() ->list[dict]:
     '''
     Returns track information 
@@ -34,7 +58,7 @@ layout = html.Main([
     html.Div(style={"margin-top": "100px"}),
     html.H1("TikTok Views Over Time"),
     dcc.Dropdown(id="tt_track_names",
-                 placeholder="Type in an artist name or select one\
+                 placeholder="Type in a track name or select one\
                  from the dropdown"),
     dcc.DatePickerRange(id="track_date_slider",
                         display_format="D-M-Y"),

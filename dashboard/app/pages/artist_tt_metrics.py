@@ -6,6 +6,7 @@ import pandas as pd
 from datetime import timedelta, datetime
 
 from helper_functions import get_db_connection
+from pandas import DataFrame
 
 register_page(__name__, path="/artist_tiktok_metrics")
 
@@ -22,9 +23,10 @@ def get_tt_artist_names() -> list[str]:
     [names.extend(name) for name in result]
     return names
 
-def get_min_max_dates(artist_name: str):
+
+def get_min_max_dates(artist_name: str) -> str:
     '''
-    Returns the min and max dates of when artist has begun being tracked
+    Returns the min and max dates of when artist has entered the charts
     '''
     long_term_conn = get_db_connection(True)
     sql_date_query = "select min(DATE(tiktok_artist_views.recorded_at)), max(DATE(tiktok_artist_views.recorded_at)) \
@@ -35,7 +37,27 @@ def get_min_max_dates(artist_name: str):
         result = cur.fetchall()
     return result[0]["min"], result[0]["max"]
 
-def get_tt_artist_pop(name: str = None) -> list[dict]:
+
+def get_artist_spotify_pop(long_term_conn, name: str = None) -> DataFrame:
+    '''
+    Returns a dataframe, artist names, a min date and a max date when the specified artist entered the charts
+    '''
+    long_term_conn = get_db_connection(True)
+    sql_query = "SELECT *, created_at AS time FROM artist JOIN artist_popularity on artist.artist_spotify_id = \
+        artist_popularity.artist_spotify_id WHERE artist.spotify_name = %s ORDER BY time ASC;"
+    with long_term_conn, long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql_query, (name,))
+        result = cur.fetchall()
+    artist_pop_df = pd.DataFrame(result)
+    artist_names = artist_pop_df["spotify_name"]
+    artist_dates = artist_pop_df.sort_values(by="created_at", ascending=True)
+    pd.to_datetime(artist_dates["created_at"])
+    min_date = artist_dates["created_at"].dt.date.min()
+    max_date = artist_dates["created_at"].dt.date.max() + timedelta(days=1)
+    return artist_pop_df, artist_names, min_date, max_date
+
+
+def get_tt_artist_pop(metric: str, name: str = None) -> list[dict]:
     '''
     Returns all artist in long term database that have a tiktok account and their metrics on tiktok
     '''
@@ -48,14 +70,16 @@ def get_tt_artist_pop(name: str = None) -> list[dict]:
         with long_term_conn, long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(sql_query)
             result = cur.fetchall()
-    else:
+    elif name is not None and metric in ["TikTok follower count", "TikTok likes"]:
         sql_query = "select artist.artist_spotify_id, artist_tiktok_follower_count_in_hundred_thousands,\
-            artist_tiktok_like_count_in_hundred_thousands, tiktok_artist_views.recorded_at as time, \
-                artist.spotify_name from tiktok_artist_views join artist on artist.artist_spotify_id = \
+                    artist_tiktok_like_count_in_hundred_thousands, tiktok_artist_views.recorded_at as time, \
+                    artist.spotify_name from tiktok_artist_views join artist on artist.artist_spotify_id = \
                     tiktok_artist_views.artist_spotify_id where spotify_name = %s ORDER BY time ASC;"
         with long_term_conn, long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(sql_query, (name,))
             result = cur.fetchall()
+    elif name is not None and metric in ["Spotify follower count", "Spotify popularity"]:
+        return get_artist_spotify_pop(long_term_conn, name)
     tt_artist_pop_df = pd.DataFrame(result)
     tt_artist_names = tt_artist_pop_df["spotify_name"]
     pd.to_datetime(tt_artist_pop_df["time"])
@@ -67,11 +91,11 @@ def get_tt_artist_pop(name: str = None) -> list[dict]:
 
 layout = html.Main([
     html.Div(style={"margin-top": "100px"}),
-    html.H1("Artist TikTok Metrics Over Time"),
+    html.H1("Artist Metrics Over Time"),
     dcc.Dropdown(id="artist_names",
                  placeholder="Type in an artist name or select one\
                  from the dropdown"),
-    dcc.Dropdown(options=["Follower count", "Likes"],
+    dcc.Dropdown(options=["TikTok follower count", "TikTok likes", "Spotify follower count", "Spotify popularity"],
                  id="follower_or_likes",
                  placeholder="Please select how you'd like to track this artist"),
     dcc.DatePickerRange(id="date_slider",
@@ -106,11 +130,15 @@ def create_artist_popularity_graph(user_input_artist, user_input_metric, user_st
         tt_artist_names = get_tt_artist_names()
         min_date, max_date = get_min_max_dates(user_input_artist)
         return px.line(), tt_artist_names, min_date, max_date
-    if user_input_metric == "Follower count":
+    if user_input_metric == "TikTok follower count":
         metric = "artist_tiktok_follower_count_in_hundred_thousands"
-    else:
+    elif user_input_metric == "TikTok likes":
         metric = "artist_tiktok_like_count_in_hundred_thousands"
-    tt_artist_pop_df, tt_artist_names, min_date, max_date = get_tt_artist_pop(user_input_artist)
+    elif user_input_metric == "Spotify follower count":
+        metric = "follower_count"
+    else:
+        metric = "artist_popularity"
+    tt_artist_pop_df, tt_artist_names, min_date, max_date = get_tt_artist_pop(user_input_metric, user_input_artist)
     complete_tt_artist_names = get_tt_artist_names()
     artist_df = tt_artist_pop_df[tt_artist_pop_df["spotify_name"]
                               == user_input_artist]
