@@ -20,7 +20,7 @@ def get_track_names() -> list[str]:
         cur.execute(sql_track_query)
         result = cur.fetchall()
     track_names = []
-    [track_names.extend(track) for track in result]
+    [track_names.append(track["track_name"]) for track in result]
     return track_names
 
 
@@ -28,22 +28,27 @@ def get_min_max_dates(track_name: str) -> str:
     '''
     Returns the min and max dates of when a track has entered the charts
     '''
+    long_term_conn = get_db_connection(True)
     sql_date_query = "select min(DATE(tiktok_track_views.recorded_at)), max(DATE(tiktok_track_views.recorded_at)) \
-                    FROM track JOIN tiktok_tack_views ON track.track_spotify_id = tiktok_track_views.track_spotify_id\
-                        WHERE track.track_name = %s"
-    pass
+                    FROM track JOIN tiktok_track_views ON track.track_spotify_id = tiktok_track_views.track_spotify_id\
+                        WHERE track.track_name = %s;"
+    with long_term_conn, long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
+        cur.execute(sql_date_query, (track_name,))
+        result = cur.fetchall()
+    return result[0]["min"], result[0]["max"]
 
 
-def get_tt_track_views() ->list[dict]:
+def get_tt_track_views(track_name: str) ->list[dict]:
     '''
     Returns track information 
     '''
     long_term_conn = get_db_connection(True)
     sql_query = "SELECT track.track_spotify_id, tiktok_track_views_in_hundred_thousands,\
           tiktok_track_views.recorded_at AS time, track.track_name FROM tiktok_track_views \
-            JOIN track ON track.track_spotify_id = tiktok_track_views.track_spotify_id;"
+            JOIN track ON track.track_spotify_id = tiktok_track_views.track_spotify_id where track.track_name = %s\
+                ORDER BY time ASC;"
     with long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
-        cur.execute(sql_query)
+        cur.execute(sql_query, (track_name,))
         result = cur.fetchall()
     tt_track_views_df = pd.DataFrame(result)
     tt_track_names = tt_track_views_df["track_name"]
@@ -83,10 +88,15 @@ def create_artist_popularity_graph(user_input_track, user_start_date, user_end_d
     '''
     Creates a line graph showing an artist's popularity/follower count over time
     '''
-    while user_input_track is None or user_start_date is None or user_end_date is None:
-        tt_track_views_df, tt_track_names, min_date, max_date = get_tt_track_views()
+    while user_input_track is None:
+        tt_track_names = get_track_names()
+        return px.line(), tt_track_names, datetime.now().date(), datetime.now().date()
+    while user_start_date is None or user_end_date is None:
+        tt_track_names = get_track_names()
+        min_date, max_date = get_min_max_dates(user_input_track)
         return px.line(), tt_track_names, min_date, max_date
-    tt_track_views_df, tt_track_names, min_date, max_date = get_tt_track_views()
+    tt_track_views_df, tt_track_names, min_date, max_date = get_tt_track_views(user_input_track)
+    tt_track_names = get_track_names()
     track_df = tt_track_views_df[tt_track_views_df["track_name"]
                               == user_input_track]
     track_df = track_df.loc[(track_df["time"] <= (datetime.strptime(user_end_date, "%Y-%m-%d") + timedelta(days=1))) & (
