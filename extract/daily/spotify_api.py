@@ -300,6 +300,7 @@ def handler(event=None, context=None):
         print("Complete!\n")
         print("Fetching html from TikTok charts...")
         tiktok_songs = search_multiple_tok_pages(TOKCHARTS_BASE_URL)
+        print(tiktok_songs)
         print("Matching tiktok songs to spotify counterparts...")
         unmatched_tiktok_songs = match_tiktok_to_spotify(
             tiktok_songs, spotify_tracks)
