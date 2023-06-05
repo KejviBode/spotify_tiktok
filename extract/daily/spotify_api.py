@@ -243,6 +243,7 @@ def get_tiktok_attributes(unmatched_tiktok_songs: list[dict], headers: dict) -> 
                 if key not in audio_features.keys():
                     print(
                         f"Track '{track['name']}' is missing key: {key} and cannot be used")
+                    continue
             track["danceability"] = audio_features["danceability"]
             track["energy"] = audio_features["energy"]
             track["valence"] = audio_features["valence"]
@@ -300,7 +301,6 @@ def handler(event=None, context=None):
         print("Complete!\n")
         print("Fetching html from TikTok charts...")
         tiktok_songs = search_multiple_tok_pages(TOKCHARTS_BASE_URL)
-        print(tiktok_songs)
         print("Matching tiktok songs to spotify counterparts...")
         unmatched_tiktok_songs = match_tiktok_to_spotify(
             tiktok_songs, spotify_tracks)

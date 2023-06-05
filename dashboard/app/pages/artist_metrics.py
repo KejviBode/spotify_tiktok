@@ -5,7 +5,7 @@ import plotly.express as px
 import pandas as pd
 from datetime import timedelta, datetime
 
-from helper_functions import get_db_connection
+from helper_functions import get_db_connection, conn, long_conn
 from pandas import DataFrame
 
 register_page(__name__, path="/artist_tiktok_metrics")
@@ -14,7 +14,7 @@ def get_tt_artist_names() -> list[str]:
     '''
     Returns a list of all artist names in the long term database
     '''
-    long_term_conn = get_db_connection(True)
+    long_term_conn = long_conn
     sql_name_query = "select spotify_name from artist;"
     with long_term_conn, long_term_conn.cursor() as cur:
         cur.execute(sql_name_query)
@@ -28,7 +28,7 @@ def get_min_max_dates(artist_name: str) -> str:
     '''
     Returns the min and max dates of when artist has entered the charts
     '''
-    long_term_conn = get_db_connection(True)
+    long_term_conn = long_conn
     sql_date_query = "select min(DATE(tiktok_artist_views.recorded_at)), max(DATE(tiktok_artist_views.recorded_at)) \
         FROM artist JOIN tiktok_artist_views ON artist.artist_spotify_id = tiktok_artist_views.artist_spotify_id\
               WHERE artist.spotify_name = %s"
@@ -42,7 +42,7 @@ def get_artist_spotify_pop(long_term_conn, name: str = None) -> DataFrame:
     '''
     Returns a dataframe, artist names, a min date and a max date when the specified artist entered the charts
     '''
-    long_term_conn = get_db_connection(True)
+    long_term_conn = long_conn
     sql_query = "SELECT *, created_at AS time FROM artist JOIN artist_popularity on artist.artist_spotify_id = \
         artist_popularity.artist_spotify_id WHERE artist.spotify_name = %s ORDER BY time ASC;"
     with long_term_conn, long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -61,7 +61,7 @@ def get_tt_artist_pop(metric: str, name: str = None) -> list[dict]:
     '''
     Returns all artist in long term database that have a tiktok account and their metrics on tiktok
     '''
-    long_term_conn = get_db_connection(True)
+    long_term_conn = long_conn
     if name is None:
         sql_query = "select artist.artist_spotify_id, artist_tiktok_follower_count_in_hundred_thousands,\
             artist_tiktok_like_count_in_hundred_thousands, tiktok_artist_views.recorded_at as time, \

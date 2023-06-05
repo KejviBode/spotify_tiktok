@@ -161,7 +161,7 @@ def load_tiktok_artist_views_data(short_conn: connection, long_conn: connection)
 def empty_short_term_tables(short_conn: connection):
     """Removes all the short term data from the database"""
     tables = ["track_popularity", "artist_popularity", "artist_genre", "track_artist",
-              "genre", "track", "artist"]
+              "genre", "track", "artist", "tiktok_track_views", "tiktok_artist_views"]
     with short_conn, short_conn.cursor(cursor_factory=RealDictCursor) as cur:
         for table in tables:
             cur.execute(f"DELETE FROM {table};")

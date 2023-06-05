@@ -5,7 +5,7 @@ import plotly.express as px
 import pandas as pd
 from datetime import timedelta, datetime
 
-from helper_functions import get_db_connection
+from helper_functions import get_db_connection, conn, long_conn
 
 register_page(__name__, path="/tiktok_track_metrics")
 
@@ -14,7 +14,7 @@ def get_track_names() -> list[str]:
     '''
     Returns a list of all track names
     '''
-    long_term_conn = get_db_connection(True)
+    long_term_conn = long_conn
     sql_track_query = "SELECT track_name from track;"
     with long_term_conn, long_term_conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(sql_track_query)
@@ -28,7 +28,7 @@ def get_min_max_dates(track_name: str) -> str:
     '''
     Returns the min and max dates of when a track has entered the charts
     '''
-    long_term_conn = get_db_connection(True)
+    long_term_conn = long_conn
     sql_date_query = "select min(DATE(tiktok_track_views.recorded_at)), max(DATE(tiktok_track_views.recorded_at)) \
                     FROM track JOIN tiktok_track_views ON track.track_spotify_id = tiktok_track_views.track_spotify_id\
                         WHERE track.track_name = %s;"
@@ -42,7 +42,7 @@ def get_tt_track_views(track_name: str) ->list[dict]:
     '''
     Returns track information 
     '''
-    long_term_conn = get_db_connection(True)
+    long_term_conn = long_conn
     sql_query = "SELECT track.track_spotify_id, tiktok_track_views_in_hundred_thousands,\
           tiktok_track_views.recorded_at AS time, track.track_name FROM tiktok_track_views \
             JOIN track ON track.track_spotify_id = tiktok_track_views.track_spotify_id where track.track_name = %s\

@@ -7,7 +7,7 @@ import plotly.express as px
 import pandas as pd
 from datetime import date, timedelta, datetime
 
-from helper_functions import get_db_connection, get_all_current_songs
+from helper_functions import get_db_connection, get_all_current_songs, conn, long_conn
 
 register_page(__name__, path="/chart_position")
 
@@ -25,7 +25,6 @@ def get_song_chart_positions(user_input):
     '''
     Gets chart position by date for given song
     '''
-    long_conn = get_db_connection(True)
     if user_input is None:
         songs = get_all_current_songs(long_conn)
         return px.line(), [{'label': song, 'value': song} for song in songs]

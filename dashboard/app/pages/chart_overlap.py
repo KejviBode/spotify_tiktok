@@ -6,7 +6,7 @@ import plotly.express as px
 from psycopg2.extras import RealDictCursor
 
 
-from helper_functions import get_db_connection
+from helper_functions import get_db_connection, conn, long_conn
 
 register_page(__name__, path="/chart_overlap")
 
@@ -22,8 +22,6 @@ def pie_chart(user_input):
     '''
     Creates a pie chart of the songs in the Spotify chart, TikTok chart, and both charts
     '''
-    conn = get_db_connection()
-    long_conn = get_db_connection(True)
     if user_input == "None" or user_input == None:
         with conn, conn.cursor(cursor_factory=RealDictCursor) as cur:
             sql_query = 'SELECT \

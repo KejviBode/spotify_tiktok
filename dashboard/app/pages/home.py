@@ -2,7 +2,7 @@ from os import path
 from dash import Dash, register_page, html, page_container, callback, dcc, Input, Output, dash_table
 import pandas as pd
 
-from helper_functions import conn, get_top_ten, get_db_connection
+from helper_functions import conn, get_top_ten, get_db_connection, long_conn
 
 register_page(__name__, path="/")
 
@@ -23,7 +23,6 @@ layout = html.Main([
 @callback(Output("charts-container", "children"),
               Input("interval-component", "n_intervals"))
 def update_charts(n):
-    conn = get_db_connection()
     spotify_top_ten = get_top_ten("spotify", conn)
     tiktok_top_ten = get_top_ten("tiktok", conn)
 

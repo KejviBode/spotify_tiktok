@@ -49,9 +49,7 @@ def get_tokchart_relevant_div(tok_soup: BeautifulSoup) -> list[dict]:
         except:
             try:
                 song_rank = song.find("div", {"class": "font-bold sm:font-extrabold leading-7 text-base sm:text-xl"}).contents[0].strip()
-                # print(song_rank)
             except:
-                # print("Are you skipping everything?")
                 continue
         try:
             song_artists = song.find("span", {"class": "mt-1 sm:mt-2 text-sm text-gray-500 sm:block sm:text-xl"}).contents[0]
@@ -78,7 +76,6 @@ def search_multiple_tok_pages(base_url: str = TOKCHARTS_BASE_URL) -> list[dict]:
             if soup is None:
                 continue
             track_info = get_tokchart_relevant_div(soup)
-            print(track_info)
             [tracks.append(track) for track in track_info]
         except:
             print(f"Error fetching data from {base_url}{i}")

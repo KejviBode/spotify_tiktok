@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from helper_functions import get_all_current_songs, danceability, energy, valence, tempo, speechiness, get_db_connection
+from helper_functions import get_all_current_songs, danceability, energy, valence, tempo, speechiness, get_db_connection, conn, long_conn
 
 register_page(__name__, path="/song_attributes")
 
@@ -34,7 +34,6 @@ def song_attribute_bar_chart(user_input):
     '''
     Creates bar graph of attributes for song from user input
     '''
-    conn = get_db_connection()
     if user_input is None:
         songs = get_all_current_songs(conn)
         fig = px.bar()
