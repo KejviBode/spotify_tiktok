@@ -2,16 +2,16 @@ from os import path
 from dash import Dash, register_page, html, page_container, callback, dcc, Input, Output, dash_table
 import pandas as pd
 
-from helper_functions import conn, get_top_ten
+from helper_functions import conn, get_top_ten, get_db_connection, long_conn
 
 register_page(__name__, path="/")
 
 
-spotify_top_ten = get_top_ten("spotify", conn)
-tiktok_top_ten = get_top_ten("tiktok", conn)
+# spotify_top_ten = get_top_ten("spotify", conn)
+# tiktok_top_ten = get_top_ten("tiktok", conn)
 
-spotify_data = pd.DataFrame(spotify_top_ten)
-tiktok_data = pd.DataFrame(tiktok_top_ten)
+# spotify_data = pd.DataFrame(spotify_top_ten)
+# tiktok_data = pd.DataFrame(tiktok_top_ten)
 
 layout = html.Main([
     html.Div(style={"margin-top": "100px"}),

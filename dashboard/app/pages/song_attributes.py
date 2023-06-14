@@ -5,11 +5,9 @@ import plotly.graph_objects as go
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from helper_functions import conn, get_all_current_songs, danceability, energy, valence, tempo, speechiness
+from helper_functions import get_all_current_songs, danceability, energy, valence, tempo, speechiness, get_db_connection, conn, long_conn
 
 register_page(__name__, path="/song_attributes")
-
-songs = get_all_current_songs(conn)
 
 
 layout = html.Main([html.Div(style={"margin-top": "100px"}),

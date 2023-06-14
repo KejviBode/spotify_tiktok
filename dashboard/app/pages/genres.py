@@ -5,7 +5,7 @@ import pandas as pd
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from helper_functions import conn
+from helper_functions import get_db_connection, conn, long_conn
 
 register_page(__name__, path="/genres")
 

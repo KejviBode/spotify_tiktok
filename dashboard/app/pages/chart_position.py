@@ -7,12 +7,9 @@ import plotly.express as px
 import pandas as pd
 from datetime import date, timedelta, datetime
 
-from helper_functions import get_db_connection, get_all_current_songs
+from helper_functions import get_db_connection, get_all_current_songs, conn, long_conn
 
 register_page(__name__, path="/chart_position")
-
-
-long_conn = get_db_connection(True)
 
 
 layout = html.Main([html.Div(style={"margin-top": "100px"}),
@@ -36,22 +33,23 @@ def get_song_chart_positions(user_input):
     last_dash_index = user_input.rfind("-")
     song_name = user_input[:last_dash_index].strip()
     with long_conn, long_conn.cursor(cursor_factory=RealDictCursor) as cur:
-        sql_query = "select * FROM track JOIN track_popularity ON track.track_spotify_id = track_popularity.track_spotify_id where track.track_name =%s"
+        sql_query = "select * FROM track where track.track_name =%s"
         vals = (song_name,)
         cur.execute(sql_query, vals)
         results = cur.fetchall()
     
-    chart_data = pd.DataFrame(columns=['tiktok_rank', 'spotify_rank', 'created_at'])
+    chart_data = pd.DataFrame(columns=['tiktok_rank', 'spotify_rank', 'recorded_at'])
     for item in results:
-        new_row = [item["tiktok_rank"], item["spotify_rank"], item["created_at"].date()]
+        new_row = [item["tiktok_rank"], item["spotify_rank"], item["recorded_at"].date()]
         chart_data.loc[len(chart_data)] = new_row
     chart_data['tiktok_rank'] = pd.to_numeric(chart_data['tiktok_rank'])
     chart_data['spotify_rank'] = pd.to_numeric(chart_data['spotify_rank'])
-    chart_data['created_at'] = pd.to_datetime(chart_data['created_at'])
+    chart_data['recorded_at'] = pd.to_datetime(chart_data['recorded_at'])
     
-    chart_data_sorted = chart_data.sort_values('created_at')
-    fig = px.line(chart_data_sorted, x='created_at', y=['tiktok_rank', 'spotify_rank'], 
+    chart_data_sorted = chart_data.sort_values('recorded_at')
+    fig = px.line(chart_data_sorted, x='recorded_at', y=['tiktok_rank', 'spotify_rank'], 
               title='Change in Chart Position',
-              labels={'value': 'Rank', 'created_at': 'Date'},
+              labels={'value': 'Rank', 'recorded_at': 'Date'},
               line_group='variable', color='variable')
+    fig.update_yaxes(autorange="reversed")
     return fig, [{'label': song, 'value': song} for song in songs]

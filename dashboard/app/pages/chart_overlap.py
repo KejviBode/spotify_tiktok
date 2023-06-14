@@ -6,7 +6,7 @@ import plotly.express as px
 from psycopg2.extras import RealDictCursor
 
 
-from helper_functions import conn, long_conn
+from helper_functions import get_db_connection, conn, long_conn
 
 register_page(__name__, path="/chart_overlap")
 
